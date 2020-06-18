@@ -44,7 +44,7 @@ SETUP_FILTER_GENRES
 	EN	Restrict genres
 
 SETUP_FILTER_GENRES_DESC
-	EN	Restrict mix to the genres similar to thart of the seed (Default: no)
+	EN	Restrict mix to the genres similar to that of the seed (Default: Yes)
 
 SETUP_MIX_STYLE
 	CS	Styl mixu

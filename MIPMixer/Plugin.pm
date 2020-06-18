@@ -60,7 +60,7 @@ sub initPlugin {
         mix_type        => 0,
         mix_style       => 20,
         mix_variety     => 0,
-        filter_genres   => 0,
+        filter_genres   => 1,
         port            => 10002,
     });
 
