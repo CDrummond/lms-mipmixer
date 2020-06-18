@@ -273,7 +273,6 @@ sub _initGenres {
             my $set={};
             my $count = 0;
             foreach my $genre (@$s) {
-                print("\n" . ${genre} . "\n");
                 $sql->execute($genre);
                 if ( my $result = $sql->fetchall_arrayref({}) ) {
                     my $val = $result->[0]->{'id'} if ref $result && scalar @$result;
@@ -320,7 +319,7 @@ sub _getSeedGenres {
 
         main::DEBUGLOG && $log->debug("Seed genres: " . Data::Dump::dump(@genres));
     } else {
-        main::DEBUGLOG && $log->debug("Not filterig on genres");
+        main::DEBUGLOG && $log->debug("Not filtering on genres");
     }
 
     return @genres;
