@@ -1,0 +1,9 @@
+[
+ ["Rock", "'00s Rock", "10's Alternative", "Alternative", "Alternative/Indie", "Alternative Rock", "Classic Rock", "Folk Rock", "Gothic Metal", "Hard Rock", "Heavy Metal", "Indie Rock", "Metal", "New Wave", "Power Metal", "Progressive Metal", "Progressive Rock", "Punk Rock", "Rock & Roll", "Soundtrack", "Southern Rock", "Symphonic Metal", "Symphonic Power Metal", "Custom", "Music-Indie"],
+ ["Blues", "Blues Rock"],
+ ["'10s Pop", "10's Pop", "BritPop", "Dance", "Dance/Electronic", "Disco", "Hip-Hop/Rap", "Indie", "Musical", "Nu-Soul", "Oldies", "Pop", "Pop-Folk", "PopFunk", "Pop/Rock", "Pop Rock", "Popular", "R&B", "Reggae", "Rock/Pop", "Singer-Songwriter", "Soul", "Soundtrack", "Teen Pop", "Trance", "Alternative Pop/Rock", "Country", "Fitness & Workout"],
+ ["Baroque", "Classical", "Classical Crossover", "Classical Period", "Instrumental", "New Age", "Opera", "Romantic", "Soundtrac1k", "20th/21st Century"],
+ ["Folk", "Celtic", "Celtic Rock", "National Folk", "Accoustic"],
+ ["Easy Listening", "Soundtrack"],
+ ["Jazz", "Jazz/Funk"]
+]

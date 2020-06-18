@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<extension>
+	<id>aff53c19-f7ca-46be-b38d-3fc1883455aa</id>
+	<name>MIPMIXER</name>
+	<module>Plugins::MIPMixer::Plugin</module>
+	<version>0.0.1</version>
+	<description>MIPMIXER_DESC</description>
+	<creator>Craig Drummond</creator>
+	<defaultState>
+		<mac>enabled</mac>
+		<win>enabled</win>
+		<other>enabled</other>
+	</defaultState>
+	<homepageURL>https://github.com/CDrummond/lms-mipmixer</homepageURL>
+	<type>2</type>
+	<targetApplication>
+		<id>Logitech Media Server</id>
+		<minVersion>7.9</minVersion>
+		<maxVersion>*</maxVersion>
+	</targetApplication>
+</extension>

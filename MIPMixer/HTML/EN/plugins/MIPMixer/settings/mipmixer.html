@@ -1,0 +1,46 @@
+[% PROCESS settings/header.html %]
+
+	[% WRAPPER settingSection %]
+
+		[% WRAPPER settingGroup title="SETUP_MIX_STYLE" desc="SETUP_MIX_STYLE_DESC" %]
+			<input type="text" class="stdedit sliderInput_0_200" name="pref_mix_style" id="mix_style" value="[% prefs.pref_mix_style %]" size="5">
+		[% END %]
+
+		[% WRAPPER settingGroup title="SETUP_MIX_VARIETY" desc="SETUP_MIX_VARIETY_DESC" %]
+			<input type="text" class="stdedit sliderInput_0_9" name="pref_mix_variety" id="mix_variety" value="[% prefs.pref_mix_variety %]" size="5">
+		[% END %]
+
+		[% WRAPPER settingGroup title="SETUP_FILTER_GENRES" desc="SETUP_FILTER_GENRES_DESC" %]
+			<select class="stdedit" name="pref_filter_genres" id="filter_genres">
+	
+				<option [% IF NOT prefs.filter_genres %]selected [% END %]value="0">[% 'NO' | getstring %]</option>
+				<option [% IF prefs.filter_genres %]selected [% END %]value="1">[% 'YES' | getstring %]</option>
+			
+			</select>
+		[% END %]
+
+		[% WRAPPER settingGroup title="SETUP_MIX_FILTER" desc="SETUP_MIX_FILTER_DESC" %]
+			<select class="stdedit" name="pref_mix_filter" id="mix_filter">
+	
+			[% FOREACH option = filters.keys %]
+	
+				<option [% IF prefs.pref_mix_filter == option %]selected [% END %]value="[% option %]">[% filters.item(option) %]</option>
+	
+			[%- END -%]
+			
+			</select>
+		[% END %]
+
+	[% END %]
+
+	[% WRAPPER settingSection %]
+
+		[% IF prefs.exists('pref_port') %]
+			[% WRAPPER settingGroup title="SETUP_MMSPORT" desc="SETUP_MMSPORT_DESC" %]
+				<input type="text" class="stdedit" name="pref_port" id="port" value="[% prefs.pref_port %]" size="5">
+			[% END %]
+		[% END %]
+
+	[% END %]
+
+[% PROCESS settings/footer.html %]
