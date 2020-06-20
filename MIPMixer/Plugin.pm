@@ -68,23 +68,8 @@ sub initPlugin {
         Plugins::MIPMixer::Settings->new;
     }
 
-    my $response = _syncHTTPRequest("/api/version");
-
-    main::INFOLOG && $log->info("Testing for API on localhost:$MIPPort");
-
-    if ($response->is_error) {
-        $initialized = 0;
-        $log->error("Can't connect to port $MIPPort - MusicIP disabled.");
-
-    } else {
-        my $content = $response->content;
-
-        if ( main::INFOLOG && $log->is_info ) {
-            $log->info($content);
-        }
-        _initGenres();
-        $initialized = $content;
-    }
+    _initGenres();
+    $initialized = 1;
     return $initialized;
 }
 
