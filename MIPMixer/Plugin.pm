@@ -35,9 +35,10 @@ use Plugins::MIPMixer::Settings;
 my $initialized = 0;
 my $MIPPort;
 my @genreSets = ();
-my $NUM_TRACKS = 15;
+my $NUM_TRACKS = 20;
 my $NUM_TRACKS_REPEAT_ARTIST = 5;
 my $NUM_TRACKS_TO_USE = 5;
+my $NUM_SEED_TRACKS = 5;
 
 my $log = Slim::Utils::Log->addLogCategory({
     'category'     => 'plugin.mipmixer',
@@ -82,47 +83,61 @@ sub postinitPlugin {
         Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('MIPMIXER_MIX', sub {
             my ($client, $cb) = @_;
 
-            my $seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, 5);
+            my $seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, $NUM_SEED_TRACKS);
             my $tracks = [];
 
             # don't seed from radio stations - only do if we're playing from some track based source
+            # Get list of valid seeds...
             if ($seedTracks && ref $seedTracks && scalar @$seedTracks) {
+                my @seedGenres = ();
+                my @seedsToUse = ();
                 foreach my $seedTrack (@$seedTracks) {
                     my ($trackObj) = Slim::Schema->find('Track', $seedTrack->{id});
                     if ($trackObj) {
-                        my $mix = _getMix($trackObj);
-                        main::idleStreams();
+                        my @genres = _getSeedGenres($trackObj->id);
+                        if (scalar @genres > 1) {
+                            push @seedGenres, @genres;
+                        }
+                        push @seedsToUse, $trackObj;
+                    }
+                }
 
-                        if ($mix && scalar @$mix) {
-                              my @genres = _getSeedGenres($trackObj->id);
-                              if (scalar @genres > 1) {
-                                  # Track's genre is listed in genres.json, so only allow similar genres
-                                my %genrehash = map { $_ => 1 } @genres;
-                                foreach my $candidate (@$mix) {
-                                    my @cgenres = _getCandidateGenres($candidate);
-                                    my $count = scalar @cgenres;
-                                    my $found = 0;
+                if (scalar @seedsToUse > 0) {
+                    my $mix = _getMix(@seedsToUse);
+                    main::idleStreams();
 
-                                    for (my $i = 0; $i < $count && $found==0; $i++) {
-                                        if (exists($genrehash{$cgenres[$i]})) {
-                                            main::DEBUGLOG && $log->debug($candidate . " matched genre");
-                                            push @$tracks, $candidate;
-                                            $found=1;
-                                        }
+                    if ($mix && scalar @$mix) {
+                        if (scalar @seedGenres > 1) {
+                            # One or more seed tracks genres are listed in genres.json, so only allow similar genres
+                            my %genrehash = map { $_ => 1 } @seedGenres;
+                            foreach my $candidate (@$mix) {
+                                my @cgenres = _getCandidateGenres($candidate);
+                                my $count = scalar @cgenres;
+                                my $found = 0;
+
+                                for (my $i = 0; $i < $count && $found==0; $i++) {
+                                    if (exists($genrehash{$cgenres[$i]})) {
+                                        main::DEBUGLOG && $log->debug($candidate . " matched genre");
+                                        push @$tracks, $candidate;
+                                        $found=1;
                                     }
-
-                                    main::DEBUGLOG && $found==0 && $log->debug($candidate . " FAILED to match genre");
                                 }
-                            } else {
-                                # Track's genre is not in genres.json - so can't filter!
-                                push @$tracks, @$mix;
+
+                                main::DEBUGLOG && $found==0 && $log->debug($candidate . " FAILED to match genre");
                             }
+                        } else {
+                            # Seed track genres are not in genres.json - so can't filter!
+                            push @$tracks, @$mix;
                         }
                     }
                 }
             }
 
             $tracks = Slim::Plugin::DontStopTheMusic::Plugin->deDupe($tracks);
+            # If we have more than 2*num tracks, then use 1st 2*num - and then shuffle those...
+            if ( scalar @$tracks > $NUM_TRACKS_TO_USE*2 ) {
+                $tracks = [ splice(@$tracks, 0, $NUM_TRACKS_TO_USE*2) ];
+            }
             if ( scalar @$tracks > $NUM_TRACKS_TO_USE ) {
                 Slim::Player::Playlist::fischer_yates_shuffle($tracks);
                 $tracks = [ splice(@$tracks, 0, $NUM_TRACKS_TO_USE) ];
@@ -144,9 +159,8 @@ sub title {
 }
 
 sub _getMix {
-    my $track = shift;
+    my @tracks = splice(@_);
 
-    my $id = index($track->url, '#')>0 ? $track->url : $track->path;
     my @mix = ();
     my $req;
     my $res;
@@ -174,23 +188,29 @@ sub _getMix {
 
     if ($filter) {
         $filter = Slim::Utils::Unicode::utf8decode_locale($filter);
-
         main::DEBUGLOG && $log->debug("Filter $filter in use.");
-
         $args{'filter'} = Plugins::MIPMixer::Common::escape($filter);
     }
 
     my $argString = join( '&', map { "$_=$args{$_}" } keys %args );
 
-    main::DEBUGLOG && $log->debug("Creating mix using: $id as seed.");
-
-    if (!main::ISWINDOWS) {
-        # need to decode the file path when a file is used as seed
-        $id = Slim::Utils::Unicode::utf8decode_locale($id);
-    }
-
     # url encode the request, but not the argstring
-    my $mixArgs = 'song=' . Plugins::MIPMixer::Common::escape($id);
+    my $mixArgs = '';
+    my $count = scalar(@tracks);
+    for (my $j = 0; $j < $count; $j++) {
+        my $track = $tracks[$j];
+        my $id = index($track->url, '#')>0 ? $track->url : $track->path;
+        if (!main::ISWINDOWS) {
+            # need to decode the file path when a file is used as seed
+            $id = Slim::Utils::Unicode::utf8decode_locale($id);
+        }
+        main::DEBUGLOG && $log->debug("Creating mix using: $id as seed.");
+        if ($j > 0) {
+            $mixArgs = $mixArgs . '&song=' . Plugins::MIPMixer::Common::escape($id);
+        } else {
+            $mixArgs = 'song=' . Plugins::MIPMixer::Common::escape($id);
+        }
+    }
 
     main::DEBUGLOG && $log->debug("Request http://localhost:$MIPPort/api/mix?$mixArgs\&$argString");
 
