@@ -5,7 +5,8 @@ standard `MusicMagic`/`MusicIP` plugin. *Only* the mixer part remains, with the
 following modifications:
 
 1. Option to restrict tracks to those within a set of genres matching the seed tracks genres
-2. Handles `file://` URLs being returned from MusicIP. This is to help with CUE
+2. Only 1 request (per mix) is made with all 5 seed tracks, as opposed to 1 request per track
+3. Handles `file://` URLs being returned from MusicIP. This is to help with CUE
 file support. To allow MusicIP to use CUE files, see the `analyser` and `proxy`
 scripts located at [https://github.com/CDrummond/musicip](https://github.com/CDrummond/musicip)
 
