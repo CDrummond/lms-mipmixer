@@ -123,7 +123,13 @@ sub postinitPlugin {
                                     }
                                 }
 
-                                main::DEBUGLOG && $found==0 && $log->debug($candidate . " FAILED to match genre");
+                                $found==0 && main::DEBUGLOG && $log->debug($candidate . " FAILED to match genre");
+
+                                # Stop processing if we have enough acceptable tracks...
+                                if ($found==1 && scalar(@$tracks)>=$NUM_TRACKS_TO_USE*2) {
+                                    main::DEBUGLOG && $log->debug("Have sufficient tracks");
+                                    last;
+                                }
                             }
                         } else {
                             # Seed track genres are not in genres.json - so can't filter!
