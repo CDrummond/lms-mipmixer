@@ -103,7 +103,7 @@ sub postinitPlugin {
                 }
 
                 if (scalar @seedsToUse > 0) {
-                    my $mix = _getMix(@seedsToUse);
+                    my $mix = _getMix(\@seedsToUse);
                     main::idleStreams();
 
                     if ($mix && scalar @$mix) {
@@ -165,8 +165,8 @@ sub title {
 }
 
 sub _getMix {
-    my @tracks = splice(@_);
-
+    my $seedTracks = shift;
+    my @tracks = ref $seedTracks ? @$seedTracks : ($seedTracks);
     my @mix = ();
     my $req;
     my $res;
@@ -201,22 +201,11 @@ sub _getMix {
     my $argString = join( '&', map { "$_=$args{$_}" } keys %args );
 
     # url encode the request, but not the argstring
-    my $mixArgs = '';
-    my $count = scalar(@tracks);
-    for (my $j = 0; $j < $count; $j++) {
-        my $track = $tracks[$j];
-        my $id = index($track->url, '#')>0 ? $track->url : $track->path;
-        if (!main::ISWINDOWS) {
-            # need to decode the file path when a file is used as seed
-            $id = Slim::Utils::Unicode::utf8decode_locale($id);
-        }
-        main::DEBUGLOG && $log->debug("Creating mix using: $id as seed.");
-        if ($j > 0) {
-            $mixArgs = $mixArgs . '&song=' . Plugins::MIPMixer::Common::escape($id);
-        } else {
-            $mixArgs = 'song=' . Plugins::MIPMixer::Common::escape($id);
-        }
-    }
+    my $mixArgs = join('&', map {
+        my $id = index($_->url, '#')>0 ? $_->url : $_->path;
+        $id = main::ISWINDOWS ? $id : Slim::Utils::Unicode::utf8decode_locale($id);
+        'song=' . Plugins::MIPMixer::Common::escape($id);
+    } @tracks);
 
     main::DEBUGLOG && $log->debug("Request http://localhost:$MIPPort/api/mix?$mixArgs\&$argString");
 
