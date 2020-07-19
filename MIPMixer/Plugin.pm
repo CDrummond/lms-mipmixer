@@ -95,6 +95,7 @@ sub postinitPlugin {
                     my ($trackObj) = Slim::Schema->find('Track', $seedTrack->{id});
                     if ($trackObj) {
                         my @genres = _getSeedGenres($trackObj->id);
+                        main::DEBUGLOG && $log->debug("Seed " . $trackObj->path . " id:" . $seedTrack->{id} . " genres:" . Data::Dump::dump(@genres));
                         if (scalar @genres > 1) {
                             push @seedGenres, @genres;
                         }
@@ -117,7 +118,7 @@ sub postinitPlugin {
 
                                 for (my $i = 0; $i < $count && $found==0; $i++) {
                                     if (exists($genrehash{$cgenres[$i]})) {
-                                        main::DEBUGLOG && $log->debug($candidate . " matched genre");
+                                        main::DEBUGLOG && $log->debug($candidate . " matched on genre " . $cgenres[$i]);
                                         push @$tracks, $candidate;
                                         $found=1;
                                     }
@@ -126,7 +127,7 @@ sub postinitPlugin {
                                 $found==0 && main::DEBUGLOG && $log->debug($candidate . " FAILED to match genre");
 
                                 # Stop processing if we have enough acceptable tracks...
-                                if ($found==1 && scalar(@$tracks)>=$NUM_TRACKS_TO_USE*2) {
+                                if ($found==1 && scalar(@$tracks)>=($NUM_TRACKS_TO_USE*2)) {
                                     main::DEBUGLOG && $log->debug("Have sufficient tracks");
                                     last;
                                 }
@@ -141,7 +142,7 @@ sub postinitPlugin {
 
             $tracks = Slim::Plugin::DontStopTheMusic::Plugin->deDupe($tracks);
             # If we have more than 2*num tracks, then use 1st 2*num - and then shuffle those...
-            if ( scalar @$tracks > $NUM_TRACKS_TO_USE*2 ) {
+            if ( scalar @$tracks > ($NUM_TRACKS_TO_USE*2) ) {
                 $tracks = [ splice(@$tracks, 0, $NUM_TRACKS_TO_USE*2) ];
             }
             if ( scalar @$tracks > $NUM_TRACKS_TO_USE ) {
@@ -294,7 +295,6 @@ sub _getSeedGenres {
     my $track = shift;
     my @genres = ();
     if ($prefs->get('filter_genres')) {
-        main::DEBUGLOG && $log->debug("Filter on genres");
         my @lmsgenres = ();
         # Get genres stored in LMS for this track
         my $dbh = Slim::Schema->dbh;
@@ -316,10 +316,6 @@ sub _getSeedGenres {
                 }
             }
         }
-
-        main::DEBUGLOG && $log->debug("Seed genres: " . Data::Dump::dump(@genres));
-    } else {
-        main::DEBUGLOG && $log->debug("Not filtering on genres");
     }
 
     return @genres;
@@ -344,7 +340,7 @@ sub _getCandidateGenres {
             }
         }
     }
-    main::DEBUGLOG && $log->debug("Candidate genres: " . Data::Dump::dump(@genres));
+    main::DEBUGLOG && $log->debug("Candidate " . $url . " genres: " . Data::Dump::dump(@genres));
     return @genres;
 }
 
