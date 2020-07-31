@@ -140,13 +140,24 @@ sub postinitPlugin {
                 }
             }
 
+            # Remove any duplicates in list of tracks - probably not required, but doesn't hurt
             $tracks = Slim::Plugin::DontStopTheMusic::Plugin->deDupe($tracks);
-            # If we have more than 2*num tracks, then use 1st 2*num - and then shuffle those...
+
+            # De-dupe tracks by playqueue. DSTM does this, but if we only return 5 tracks which are duplicated
+            # in the playqueue then 'Song Mix' will be used. Therefore we want to remove duplicates before we
+            # trim and shuffle. This means we have a greater chance of adding tracks.
+            $tracks = Slim::Plugin::DontStopTheMusic::Plugin->deDupePlaylist($client, $tracks);
+
+            # If we have more than 2*num tracks, then only use 1st 2*num
             if ( scalar @$tracks > ($NUM_TRACKS_TO_USE*2) ) {
                 $tracks = [ splice(@$tracks, 0, $NUM_TRACKS_TO_USE*2) ];
             }
+
+            # Shuffle tracks...
+            Slim::Player::Playlist::fischer_yates_shuffle($tracks);
+
+            # If we have more than num tracks, then use 1st num...
             if ( scalar @$tracks > $NUM_TRACKS_TO_USE ) {
-                Slim::Player::Playlist::fischer_yates_shuffle($tracks);
                 $tracks = [ splice(@$tracks, 0, $NUM_TRACKS_TO_USE) ];
             }
 
