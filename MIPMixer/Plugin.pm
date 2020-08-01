@@ -39,7 +39,7 @@ my $MIPPort;
 my @genreSets = ();
 my $xmasGenres = {};
 my $allConfiguredGenres = {};
-my $NUM_TRACKS = 150; # Request a *LOT* of tracks so that we can filter on genre, artist, and album
+my $NUM_TRACKS = 50; # Request a *LOT* of tracks so that we can filter on genre, artist, and album
 my $NUM_TRACKS_REPEAT_ARTIST = 25;
 my $NUM_TRACKS_TO_USE = 5;
 my $NUM_TRACKS_TO_SHUFFLE = 12;
