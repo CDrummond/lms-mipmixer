@@ -287,7 +287,6 @@ sub _getPreviousTracks() {
             push @tracks, $trackObj;
         }
     }
-    @tracks = reverse(@tracks);
     return \@tracks
 }
 
