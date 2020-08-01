@@ -122,9 +122,9 @@ sub postinitPlugin {
                 }
 
                 if (scalar @seedsToUse > 0) {
-                    my $previousTracks = _getPreviousTracks($client, \@seedIds);
-                    my $numPrev = $previousTracks && ref $previousTracks ? scalar(@$previousTracks) : 0;
                     my %seedIdHash = map { $_ => 1 } @seedIds;
+                    my $previousTracks = _getPreviousTracks($client, \%seedIdHash);
+                    my $numPrev = $previousTracks ? scalar(@$previousTracks) : 0;
                     my $mix = _getMix(\@seedsToUse, \%seedIdHash);
                     main::idleStreams();
 
@@ -270,11 +270,11 @@ sub title {
 
 sub _getPreviousTracks() {
     my $client = shift;
-    my $seedsRef = shift;
-    my %seedsHash = map { $_ => 1 } @$seedsRef;
-    my $tracks = [];
+    my $seedsHashRef = shift;
+    my %seedsHash = %$seedsHashRef;
+    my @tracks = ();
 
-    return $tracks unless $client;
+    return \@tracks unless $client;
 
     $client = $client->master;
     my ($trackId, $artist, $title, $duration, $mbid, $artist_mbid);
@@ -284,11 +284,11 @@ sub _getPreviousTracks() {
         next unless defined $artist && defined $title && !exists($seedsHash{$trackId});
         my ($trackObj) = Slim::Schema->find('Track', $trackId);
         if ($trackObj) {
-            push @$tracks, $trackObj;
+            push @tracks, $trackObj;
         }
     }
-
-    return reverse($tracks);
+    @tracks = reverse(@tracks);
+    return \@tracks
 }
 
 sub _durationInRange() {
@@ -383,7 +383,7 @@ sub _idInList() {
     my $candidate = shift;
     my %hash = %$idHashRef;
     if (exists($hash{$candidate->id})) {
-        main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->id . " - matched ID (" . $cat . ")");
+        main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched ID " . $candidate->id . "(" . $cat . ")");
         return 2;
     }
 }
