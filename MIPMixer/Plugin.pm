@@ -383,7 +383,7 @@ sub _idInList() {
     my $candidate = shift;
     my %hash = %$idHashRef;
     if (exists($hash{$candidate->id})) {
-        main::DEBUGLOG && $log->debug("FILTER " . $candidate->id . " - matched ID (" . $cat . ")");
+        main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->id . " - matched ID (" . $cat . ")");
         return 2;
     }
 }
