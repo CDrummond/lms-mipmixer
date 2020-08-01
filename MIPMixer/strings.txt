@@ -6,7 +6,7 @@ MIPMIXER
 MIPMIXER_DESC
 	EN	MusicIP Mixer for Don't Stop The Music
 
-SETUP_MIX_FILTER
+MIPMIXER_MIX_FILTER
 	CS	Mix Filtr
 	DA	Miksfilter
 	DE	Mixfilter
@@ -23,7 +23,7 @@ SETUP_MIX_FILTER
 	SV	Mix: Filter
 	ZH_CN	混音过滤器
 
-SETUP_MIX_FILTER_DESC
+MIPMIXER_MIX_FILTER_DESC
 	CS	Můžete vytvořit pojmenované sady filtrovacích podmínek v MusicIP a zvolit ze zde uvedeného seznamu aplikaci filtrů na Mixy MusicIP ve Logitech Media Server.
 	DA	Du kan definere navngivne filterbetingelser i MusicIP og vælge at anvende disse filtre på miks fra MusicIP i Logitech Media Server.
 	DE	In MusicIP können Sie Filtersätze unter einem Namen speichern. Wählen Sie hier einen dieser Sätze, der auf die MusicIP-Mixes im Logitech Media Server angewendet werden soll.
@@ -40,13 +40,43 @@ SETUP_MIX_FILTER_DESC
 	SV	Du kan skapa olika uppsättningar filtervilkor i MusicIP och sedan använda dem med MusicIP Mix i Logitech Media Server. Välj filter i listan.
 	ZH_CN	您可以利用MusicIP设立过滤器，并且从这表中选择应用在Logitech Media Server内MusicIP混音的那些过滤器。
 
-SETUP_FILTER_GENRES
+MIPMIXER_FILTER_GENRES
 	EN	Restrict genres
 
-SETUP_FILTER_GENRES_DESC
+MIPMIXER_FILTER_GENRES_DESC
 	EN	Restrict mix to the genres similar to that of the seed (Default: Yes)
 
-SETUP_MIX_STYLE
+MIPMIXER_EXCLUDE_ARTISTS
+	EN	Exclude artists from mixes
+
+MIPMIXER_EXCLUDE_ARTISTS_DESC
+	EN	Comma-separated list of artist names to exclude from mixes
+
+MIPMIXER_EXCLUDE_ALBUMS
+	EN	Exclude albums from mixes
+
+MIPMIXER_EXCLUDE_ALBUMS_DESC
+	EN	Comma-separated list of albums to exclude from mixes. Use 'AlbumArtist - Album'
+
+MIPMIXER_FILTER_XMAS
+	EN	Exclude 'Christmas' genre
+
+MIPMIXER_FILTER_XMAS_DESC
+	EN	Exclude tracks tagged with 'Christmas' genre, unless in December (Default: Yes)
+
+MIPMIXER_MIN_DURATION
+	EN	Minimum duration
+
+MIPMIXER_MIN_DURATION_DESC
+	EN	Restrict to songs with a duration (in seconds) longer than this. Set to 0 for no minimum.
+
+MIPMIXER_MAX_DURATION
+	EN	Maximum duration
+
+MIPMIXER_MAX_DURATION_DESC
+	EN	Restrict to songs with a duration (in seconds) less than this. Set to 0 for no maximum.
+
+MIPMIXER_MIX_STYLE
 	CS	Styl mixu
 	DA	Miks: Stil
 	DE	Mix: Stil
@@ -63,7 +93,7 @@ SETUP_MIX_STYLE
 	SV	Mix: Stil
 	ZH_CN	混音风格
 
-SETUP_MIX_STYLE_DESC
+MIPMIXER_MIX_STYLE_DESC
 	CS	Jak hodně podobné stylu interpreta ( 0 = ignorovat (standard), 200 = striktně)
 	DA	Hvor meget som kunstnerens stil (0 = ignorer (standard), 200 = streng)
 	DE	Wie ähnlich soll der Stil des Interpreten sein? 0=ignorieren (Standard), 200=sehr ähnlich
@@ -80,7 +110,7 @@ SETUP_MIX_STYLE_DESC
 	SV	Hur mycket jag tycker om artistens stil (0 = ignorera (standard), 200 = strängt)
 	ZH_CN	有多接近艺人的风格 （0=不理睬（缺省），200=严格）
 
-SETUP_MIX_VARIETY
+MIPMIXER_MIX_VARIETY
 	CS	Škála mixu
 	DA	Miksx: Variation
 	DE	Mix: Vielseitigkeit
@@ -97,7 +127,7 @@ SETUP_MIX_VARIETY
 	SV	Mix: Urval
 	ZH_CN	混音品种变化
 
-SETUP_MIX_VARIETY_DESC
+MIPMIXER_MIX_VARIETY_DESC
 	CS	Jaká škála v mixu ( 0 = méně (standard), 9 = více )
 	DA	Hvor meget variation i mix (0 = lille (standard), 9 mere)
 	DE	Wie vielseitig soll der Mix sein? 0 = weniger (Standard), 9 = mehr
@@ -114,7 +144,7 @@ SETUP_MIX_VARIETY_DESC
 	SV	Hur stor variation i mixen (0 = mindre (standard), 9 = mer)
 	ZH_CN	混音的变化程度 （0=少（缺省），9=多）
 
-SETUP_MMSPORT
+MIPMIXER_MMSPORT
 	CS	HTTP port MusicIP
 	DA	MusicIP HTTP-port
 	DE	MusicIP - HTTP-Anschluss
@@ -131,7 +161,7 @@ SETUP_MMSPORT
 	SV	HTTP-port för MusicIP
 	ZH_CN	MusicIP HTTP端口
 
-SETUP_MMSPORT_DESC
+MIPMIXER_MMSPORT_DESC
 	CS	Služba API MusicIP umožňuje výběr http portu k použití pro dotazy na MusicIP API. Vložte zde číslo portu k přiřazení nastavení, které jste zvolili, k nastavení Mixéru Music IP.
 	DA	I grænsesnittet til MusicIP-tjenesten kan man definere en http-port der skal bruges ved forespørgsler til MusicIP. Her skal du angive det portnummer som svarer til det du valgte i indstillingerne for MusicIP Mixer.
 	DE	Mit dem MusicIP Service API können Sie einen HTTP-Anschluss für Anfragen an das MusicIP API auswählen. Geben Sie dieselbe Anschlussnummer wie in MusicIP Mixer ein.
