@@ -98,7 +98,6 @@ sub postinitPlugin {
             my ($client, $cb) = @_;
 
             my $seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, $NUM_SEED_TRACKS);
-            my $previousTracks = [];
             my $tracks = [];
             my $tracksFilteredBySeeds = [];   # MIP tracks that matched seeds
             my $tracksFilteredByCurrent = []; # MIP tracks that matched tracks already picked
@@ -122,9 +121,9 @@ sub postinitPlugin {
                     }
                 }
 
-                $previousTracks = _getPreviousTracks($client, \@seedIds);
-
                 if (scalar @seedsToUse > 0) {
+                    my $previousTracks = _getPreviousTracks($client, \@seedIds);
+                    my $numPrev = $previousTracks && ref $previousTracks ? scalar(@$previousTracks) : 0;
                     my $mix = _getMix(\@seedsToUse, \@seedIds);
                     main::idleStreams();
 
@@ -184,23 +183,23 @@ sub postinitPlugin {
                             if (_excludeAlbum(\@$excludeAlbums, $candidate)) {
                                 next;
                             }
-                            if (_sameArtistOrAlbum(\@seedsToUse, $candidate, 0, 0)) {
+                            if (_sameArtistOrAlbum('seed', \@seedsToUse, $candidate, 0, 0)) {
                                 main::DEBUGLOG && $log->debug($candidate->url . " matched seed track metadata");
                                 push @$tracksFilteredBySeeds, $candidate;
                                 next;
                             }
-                            if (_sameArtistOrAlbum(\@$tracks, $candidate, 0, 0)) {
+                            if (_sameArtistOrAlbum('current', \@$tracks, $candidate, 0, 0)) {
                                 main::DEBUGLOG && $log->debug($candidate->url . " matched current track metadata");
                                 push @$tracksFilteredByCurrent, $candidate;
                                 next;
                             }
-                            if (blessed $previousTracks) {
-                                if (_sameArtistOrAlbum(\@$previousTracks, $candidate, $NUM_PREV_TRACKS_FILTER_ARTIST, 0)) {
+                            if ($numPrev > 0) {
+                                if (_sameArtistOrAlbum('prev(artist)', \@$previousTracks, $candidate, $NUM_PREV_TRACKS_FILTER_ARTIST, 0)) {
                                     main::DEBUGLOG && $log->debug($candidate->url . " matched previous artist metadata");
                                     push @$tracksFilteredByPrev, $candidate;
                                     next;
                                 }
-                                if (_sameArtistOrAlbum(\@$previousTracks, $candidate, $NUM_PREV_TRACKS_FILTER_ALBUM, 1)) {
+                                if (_sameArtistOrAlbum('prev(album)', \@$previousTracks, $candidate, $NUM_PREV_TRACKS_FILTER_ALBUM, 1)) {
                                     main::DEBUGLOG && $log->debug($candidate->url . " matched previous album metadata");
                                     push @$tracksFilteredByPrev, $candidate;
                                     next;
@@ -272,10 +271,12 @@ sub _getPreviousTracks() {
     my $client = shift;
     my $seedsRef = shift;
     my %seedsHash = map { $_ => 1 } @$seedsRef;
-    return unless $client;
+    my $tracks = [];
+
+    return $tracks unless $client;
 
     $client = $client->master;
-    my ($trackId, $artist, $title, $duration, $mbid, $artist_mbid, $tracks);
+    my ($trackId, $artist, $title, $duration, $mbid, $artist_mbid);
 
     foreach (reverse(@{ Slim::Player::Playlist::playList($client) })) {
         ($artist, $title, $duration, $trackId, $mbid, $artist_mbid) = Slim::Plugin::DontStopTheMusic::Plugin->getMixablePropertiesFromTrack($client, $_);
@@ -284,10 +285,12 @@ sub _getPreviousTracks() {
         if ($trackObj) {
             push @$tracks, $trackObj;
             if (scalar @$tracks >= $NUM_PREV_TRACKS_FILTER_ALBUM) {
+                main::DEBUGLOG && $log->debug("RA");
                 return reverse($tracks);
             }
         }
     }
+
     return reverse($tracks);
 }
 
@@ -298,11 +301,11 @@ sub _durationInRange() {
     my $duration = $candidate->duration();
 
     if ($minDuration > 0 && $duration < $minDuration) {
-        main::DEBUGLOG && $log->debug('EXCLUDE ' . $candidate->url . " - duration (" . $duration . ") too short");
+        main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - duration (" . $duration . ") too short");
         return 0;
     }
     if ($maxDuration > 0 && $duration > $maxDuration) {
-        main::DEBUGLOG && $log->debug('EXCLUDE ' .$candidate->url . " - duration (" . $duration . ") too long");
+        main::DEBUGLOG && $log->debug("EXCLUDE " .$candidate->url . " - duration (" . $duration . ") too long");
         return 0;
     }
     return 1;
@@ -319,7 +322,7 @@ sub _excludeByGenre() {
         my %hash = %$xmasGenres;
         for (my $i = 0; $i < $count; $i++) {
             if (exists($hash{$cgenres[$i]})) {
-                main::DEBUGLOG && $log->debug('EXCLUDE ' .$candidate->url . " - matched christmas " . $cgenres[$i]);
+                main::DEBUGLOG && $log->debug("EXCLUDE " .$candidate->url . " - matched christmas " . $cgenres[$i]);
                 return 1;
             }
         }
@@ -333,14 +336,14 @@ sub _excludeByGenre() {
                 return 0;
             }
         }
-        main::DEBUGLOG && $log->debug('EXCLUDE ' . $candidate->url . " - failed to match genre");
+        main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - failed to match genre");
         return 1;
     } else {
         # No seed genres - i.e. genre of seed track was not in configured list, so check this tracks genre is not in list...
         my %hash = %$allConfiguredGenres;
         for (my $i = 0; $i < $count; $i++) {
             if (exists($hash{$cgenres[$i]})) {
-                main::DEBUGLOG && $log->debug('EXCLUDE ' . $candidate->url . " - matched on configured genre " . $cgenres[$i] . " not in seeds");
+                main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched on configured genre " . $cgenres[$i] . " not in seeds");
                 return 1;
             }
         }
@@ -378,6 +381,7 @@ sub _excludeAlbum() {
 }
 
 sub _sameArtistOrAlbum() {
+    my $cat = shift;
     my $trks = shift;
     my $candidate = shift;
     my $countToCheck = shift;
@@ -393,11 +397,11 @@ sub _sameArtistOrAlbum() {
             if ($checkAlbum) {
                 my $album = lc $track->albumname();
                 if ($album eq $cAlbum) {
-                    main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album " . $artist . " - " . $album);
+                    main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album " . $artist . " - " . $album . " (" . $cat . ")");
                     return 1;
                 }
             } else {
-                main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched artist " . $artist);
+                main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched artist " . $artist . " (" . $cat . ")");
                 return 1;
             }
         }
