@@ -46,6 +46,7 @@ my $NUM_TRACKS_TO_SHUFFLE = 12;
 my $NUM_SEED_TRACKS = 5;
 my $NUM_PREV_TRACKS_FILTER_ARTIST = 15;
 my $NUM_PREV_TRACKS_FILTER_ALBUM = 25; # Must >= NUM_PREV_TRACKS_FILTER_ARTIST
+my $NUM_PREV_TRACKS_NO_DUPE = 100;
 
 my @XMAS_GENRES = ( 'Christmas', 'XMas', 'xmas', 'Xmas' );
 
@@ -283,6 +284,9 @@ sub _getPreviousTracks() {
         my ($trackObj) = Slim::Schema->find('Track', $trackId);
         if ($trackObj) {
             push @tracks, $trackObj;
+        }
+        if (scalar(@tracks) >= $NUM_PREV_TRACKS_NO_DUPE) {
+            last;
         }
     }
     return \@tracks
