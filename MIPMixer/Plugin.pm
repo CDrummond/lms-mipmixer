@@ -124,16 +124,19 @@ sub postinitPlugin {
                 if (scalar @seedsToUse > 0) {
                     my $previousTracks = _getPreviousTracks($client, \@seedIds);
                     my $numPrev = $previousTracks && ref $previousTracks ? scalar(@$previousTracks) : 0;
-                    my $mix = _getMix(\@seedsToUse, \@seedIds);
+                    my %seedIdHash = map { $_ => 1 } @seedIds;
+                    my $mix = _getMix(\@seedsToUse, \%seedIdHash);
                     main::idleStreams();
 
                     if ($mix && scalar @$mix) {
-                        # Ensure no duplicates in mix
-                        $mix = Slim::Plugin::DontStopTheMusic::Plugin->deDupe($mix);
-                        main::idleStreams();
-                        # Ensure no tracks already in queue...
-                        $mix = Slim::Plugin::DontStopTheMusic::Plugin->deDupePlaylist($client, $mix);
-                        main::idleStreams();
+                        my %prevTrackIdHash = undef;
+                        if ($numPrev > 0) {
+                            my $idList = [];
+                            foreach my $track (@$previousTracks) {
+                                push @$idList, $track->id;
+                            }
+                            %prevTrackIdHash = map { $_ => 1 } @$idList;
+                        }
 
                         my %genrehash = undef;
                         my %xmashash = undef;
@@ -171,6 +174,9 @@ sub postinitPlugin {
                         }
 
                         foreach my $candidate (@$mix) {
+                            if (_idInList('seed', \%seedIdHash, $candidate)) {
+                                next;
+                            }
                             if (!_durationInRange($minDuration, $maxDuration, $candidate)) {
                                 next;
                             }
@@ -183,24 +189,19 @@ sub postinitPlugin {
                             if (_excludeAlbum(\@$excludeAlbums, $candidate)) {
                                 next;
                             }
-                            if (_sameArtistOrAlbum('seed', \@seedsToUse, $candidate, 0, 0)) {
-                                main::DEBUGLOG && $log->debug($candidate->url . " matched seed track metadata");
+                            if (_sameArtistOrAlbum('seed', \@seedsToUse, $candidate, 0)) {
                                 push @$tracksFilteredBySeeds, $candidate;
                                 next;
                             }
-                            if (_sameArtistOrAlbum('current', \@$tracks, $candidate, 0, 0)) {
-                                main::DEBUGLOG && $log->debug($candidate->url . " matched current track metadata");
+                            if (_sameArtistOrAlbum('current', \@$tracks, $candidate, 0)) {
                                 push @$tracksFilteredByCurrent, $candidate;
                                 next;
                             }
                             if ($numPrev > 0) {
-                                if (_sameArtistOrAlbum('prev(artist)', \@$previousTracks, $candidate, $NUM_PREV_TRACKS_FILTER_ARTIST, 0)) {
-                                    main::DEBUGLOG && $log->debug($candidate->url . " matched previous artist metadata");
-                                    push @$tracksFilteredByPrev, $candidate;
+                                if (_idInList('prev', \%prevTrackIdHash, $candidate)) {
                                     next;
                                 }
-                                if (_sameArtistOrAlbum('prev(album)', \@$previousTracks, $candidate, $NUM_PREV_TRACKS_FILTER_ALBUM, 1)) {
-                                    main::DEBUGLOG && $log->debug($candidate->url . " matched previous album metadata");
+                                if (_sameArtistOrAlbum('prev', \@$previousTracks, $candidate, 1)) {
                                     push @$tracksFilteredByPrev, $candidate;
                                     next;
                                 }
@@ -284,10 +285,6 @@ sub _getPreviousTracks() {
         my ($trackObj) = Slim::Schema->find('Track', $trackId);
         if ($trackObj) {
             push @$tracks, $trackObj;
-            if (scalar @$tracks >= $NUM_PREV_TRACKS_FILTER_ALBUM) {
-                main::DEBUGLOG && $log->debug("RA");
-                return reverse($tracks);
-            }
         }
     }
 
@@ -380,12 +377,22 @@ sub _excludeAlbum() {
     return 0;
 }
 
+sub _idInList() {
+    my $cat = shift;
+    my $idHashRef = shift;
+    my $candidate = shift;
+    my %hash = %$idHashRef;
+    if (exists($hash{$candidate->id})) {
+        main::DEBUGLOG && $log->debug("FILTER " . $candidate->id . " - matched ID (" . $cat . ")");
+        return 2;
+    }
+}
+
 sub _sameArtistOrAlbum() {
     my $cat = shift;
     my $trks = shift;
     my $candidate = shift;
-    my $countToCheck = shift;
-    my $checkAlbum = shift;
+    my $isPrevTracks = shift;
     my @tracks = @$trks;
     my $cArtist = lc $candidate->artistName();
     my $cAlbum = lc $candidate->albumname();
@@ -394,7 +401,7 @@ sub _sameArtistOrAlbum() {
     foreach my $track (@tracks) {
         my $artist = lc $track->artistName();
         if ($artist eq $cArtist) {
-            if ($checkAlbum) {
+            if ($isPrevTracks && $checked > $NUM_PREV_TRACKS_FILTER_ARTIST) {
                 my $album = lc $track->albumname();
                 if ($album eq $cAlbum) {
                     main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album " . $artist . " - " . $album . " (" . $cat . ")");
@@ -407,8 +414,8 @@ sub _sameArtistOrAlbum() {
         }
 
         $checked++;
-        if ($countToCheck > 0 && $checked >= $countToCheck) {
-            last;
+        if ($isPrevTracks==1 && $checked >= $NUM_PREV_TRACKS_FILTER_ALBUM) {
+            return 0;
         }
     }
 
@@ -418,8 +425,8 @@ sub _sameArtistOrAlbum() {
 sub _getMix {
     my $seedTracks = shift;
     my @tracks = @$seedTracks;
-    my $seedIds = shift;
-    my %idHash = map { $_ => 1 } @$seedIds;
+    my $idHashRef = shift;
+    my %idHash = %$idHashRef;
     my @mix = ();
     my $req;
     my $res;
