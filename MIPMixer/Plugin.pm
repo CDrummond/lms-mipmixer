@@ -177,6 +177,9 @@ sub postinitPlugin {
                             if (_idInList('seed', \%seedIdHash, $candidate)) {
                                 next;
                             }
+                            if ($numPrev > 0 && _idInList('prev', \%prevTrackIdHash, $candidate)) {
+                                next;
+                            }
                             if (!_durationInRange($minDuration, $maxDuration, $candidate)) {
                                 next;
                             }
@@ -197,14 +200,9 @@ sub postinitPlugin {
                                 push @$tracksFilteredByCurrent, $candidate;
                                 next;
                             }
-                            if ($numPrev > 0) {
-                                if (_idInList('prev', \%prevTrackIdHash, $candidate)) {
-                                    next;
-                                }
-                                if (_sameArtistOrAlbum('prev', \@$previousTracks, $candidate, 1)) {
-                                    push @$tracksFilteredByPrev, $candidate;
-                                    next;
-                                }
+                            if ($numPrev > 0 && _sameArtistOrAlbum('prev', \@$previousTracks, $candidate, 1)) {
+                                push @$tracksFilteredByPrev, $candidate;
+                                next;
                             }
 
                             push @$tracks, $candidate;
