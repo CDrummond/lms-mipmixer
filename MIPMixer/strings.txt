@@ -178,6 +178,18 @@ MIPMIXER_MMSPORT_DESC
 	SV	I gränssnittet till MusicIP-tjänstens kan man ange en HTTP-port som ska användas vid förfrågningar till MusicIP. Ange ett portnummer här som motsvarar inställningen du gjort i Inställningar för MusicIP Mixer.
 	ZH_CN	您可以通过MusicIP的服务应用程序接口来选择用来询问MusicIP应用程序接口的http端口。请在此输入匹配您在MusicIP里已设置好的端口号。
 
+MIPMIXER_MIP_PATH
+	EN	MusicIP path
+
+MIPMIXER_MIP_PATH_DESC
+	EN	Path to music on machine where tracks were analyzed with MusicIP. This mixer will be used to convert paths as seen by LMS to paths as seen by MusicIP, and vice versa. Leave blank if both have the same path.
+
+MIPMIXER_CONVERT_EXT
+	EN	Convert file-type extensions
+
+MIPMIXER_MIX_FILTER_DESC
+	EN	Convert to, and from, file extensions for MusicIP.
+
 MIPMIXER_MIX
 	EN	MusicIP Mixer
 

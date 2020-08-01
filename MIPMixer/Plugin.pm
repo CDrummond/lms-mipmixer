@@ -57,6 +57,7 @@ my $log = Slim::Utils::Log->addLogCategory({
 });
 
 my $prefs = preferences('plugin.mipmixer');
+my $serverprefs = preferences('server');
 
 sub shutdownPlugin {
     $initialized = 0;
@@ -77,7 +78,9 @@ sub initPlugin {
         exclude_albums  => '',
         min_duration    => 0,
         max_duration    => 0,
-        port            => 10002
+        port            => 10002,
+        mip_path        => '',
+        convert_ext     => !main::ISWINDOWS && !main::ISMAC ? 1 : 0
     });
 
     if ( main::WEBUI ) {
@@ -423,6 +426,67 @@ sub _sameArtistOrAlbum() {
     return 0;
 }
 
+sub _convertToMip {
+    my $path = shift;
+    my $mipPath = shift;
+    my $lmsPath = shift;
+    my $convertExt = shift;
+    my $fixed = $path;
+
+    if ($convertExt) {
+        my @parts = split(/#/, $path);
+        if (2==scalar(@parts)) {
+            $fixed = $parts[0] . ".CUE_TRACK." . $parts[1] . ".mp3";
+        }
+        if (!main::ISWINDOWS && !main::ISMAC) {
+            if (! ('.mp3' eq substr $fixed, -length('.mp3'))) {
+                $fixed = $fixed . ".mp3";
+            }
+        }
+    }
+    if ($mipPath) {
+        $fixed =~ s/$lmsPath/$mipPath/g;
+    }
+
+    if ($convertExt || $mipPath) {
+        main::DEBUGLOG && $log->debug("TO MIP: " . $path . " -> " . $fixed);
+    }
+    return $fixed;
+}
+
+sub _convertFromMip {
+    my $path = shift;
+    my $mipPath = shift;
+    my $lmsPath = shift;
+    my $fixed = $path;
+    my $convertExt = shift;
+
+    if ($convertExt) {
+        my @parts = split(/\.CUE_TRACK\./, $path);
+        if (2==scalar(@parts)) {
+            my $end = substr $parts[1], 0, -4; # Remove .mp3 ext
+            $fixed = $parts[0] . "#" . $end;
+        }
+        if (!main::ISWINDOWS && !main::ISMAC) {
+            if ('.m4a.mp3' eq substr $fixed, -length('.m4a.mp3')) {
+                $fixed = substr $fixed, 0, -4;
+            } elsif ('.ogg.mp3' eq substr $fixed, -length('.ogg.mp3')) {
+                $fixed = substr $fixed, 0, -4;
+            } elsif ('.flac.mp3' eq substr $fixed, -length('.flac.mp3')) {
+                $fixed = substr $fixed, 0, -4;
+            }
+        }
+    }
+    if ($mipPath) {
+        $fixed =~ s/$mipPath/$lmsPath/g;
+    }
+
+    if ($convertExt || $mipPath) {
+        main::DEBUGLOG && $log->debug("FROM MIP: " . $path . " -> " . $fixed);
+    }
+    return $fixed;
+}
+
 sub _getMix {
     my $seedTracks = shift;
     my @tracks = @$seedTracks;
@@ -452,6 +516,10 @@ sub _getMix {
         );
 
     my $filter = $prefs->get('mix_filter');
+    my $mipPath = $prefs->get('mip_path');
+    my $mediaDirs = $serverprefs->get('mediadirs');
+    my $lmsPath = @$mediaDirs[0];
+    my $convertExt = $prefs->get('convert_ext') || 1;
 
     if ($filter) {
         $filter = Slim::Utils::Unicode::utf8decode_locale($filter);
@@ -465,7 +533,7 @@ sub _getMix {
     my $mixArgs = join('&', map {
         my $id = index($_->url, '#')>0 ? $_->url : $_->path;
         $id = main::ISWINDOWS ? $id : Slim::Utils::Unicode::utf8decode_locale($id);
-        'song=' . Plugins::MIPMixer::Common::escape($id);
+        'song=' . Plugins::MIPMixer::Common::escape(_convertToMip($id, $mipPath, $lmsPath, $convertExt));
     } @tracks);
 
     main::DEBUGLOG && $log->debug("Request http://localhost:$MIPPort/api/mix?$mixArgs\&$argString");
@@ -496,26 +564,27 @@ sub _getMix {
 
     main::DEBUGLOG && $log->debug('Num tracks in response:' . $count);
     for (my $j = 0; $j < $count; $j++) {
+        my $id = _convertFromMip($songs[$j], $mipPath, $lmsPath, $convertExt);
         # Bug 4281 - need to convert from UTF-8 on Windows.
-        if (main::ISWINDOWS && !-e $songs[$j] && -e Win32::GetANSIPathName($songs[$j])) {
-            $songs[$j] = Win32::GetANSIPathName($songs[$j]);
+        if (main::ISWINDOWS && !-e $id && -e Win32::GetANSIPathName($id)) {
+            $id = Win32::GetANSIPathName($id);
         }
 
-        if ( -e $songs[$j] || -e Slim::Utils::Unicode::utf8encode_locale($songs[$j]) || index($songs[$j], 'file:///')==0) {
-            my $track = Slim::Schema->objectForUrl(Slim::Utils::Misc::fileURLFromPath($songs[$j]));
+        if ( -e $id || -e Slim::Utils::Unicode::utf8encode_locale($id) || index($id, 'file:///')==0) {
+            my $track = Slim::Schema->objectForUrl(Slim::Utils::Misc::fileURLFromPath($id));
 
             if (blessed $track) {
                 if (exists($idHash{$track->get_column('id')})) {
-                     main::DEBUGLOG && $log->debug('Skip seed track ' . $songs[$j]);
+                     main::DEBUGLOG && $log->debug('Skip seed track ' . $id);
                 } else {
                     #main::DEBUGLOG && $log->debug('MIP: ' . $track->url);
                     push @mix, $track;
                 }
             } else {
-                main::DEBUGLOG && $log->debug('Failed to get track object for ' . $songs[$j]);
+                main::DEBUGLOG && $log->debug('Failed to get track object for ' . $id);
             }
         } else {
-            $log->error('MIP attempted to mix in a song at ' . $songs[$j] . ' that can\'t be found at that location');
+            $log->error('MIP attempted to mix in a song at ' . $id . ' that can\'t be found at that location');
         }
     }
 
