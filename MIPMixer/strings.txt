@@ -182,7 +182,7 @@ MIPMIXER_MIP_PATH
 	EN	MusicIP path
 
 MIPMIXER_MIP_PATH_DESC
-	EN	Path to music on machine where tracks were analyzed with MusicIP. This mixer will be used to convert paths as seen by LMS to paths as seen by MusicIP, and vice versa. Leave blank if both have the same path.
+	EN	Path to music on machine where tracks were analyzed with MusicIP. This mixer will be used to convert paths as seen by LMS to paths as seen by MusicIP, and vice versa. If LMS's path ends with a slash then so should the path here, likewise if not. Leave blank if both have the same path.
 
 MIPMIXER_CONVERT_EXT
 	EN	Convert file-type extensions
