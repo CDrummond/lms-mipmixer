@@ -388,8 +388,9 @@ sub _idInList() {
     my %hash = %$idHashRef;
     if (exists($hash{$candidate->id})) {
         main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched ID " . $candidate->id . "(" . $cat . ")");
-        return 2;
+        return 1;
     }
+    return 0;
 }
 
 sub _sameArtistOrAlbum() {
