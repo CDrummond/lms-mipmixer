@@ -187,7 +187,7 @@ MIPMIXER_MIP_PATH_DESC
 MIPMIXER_CONVERT_EXT
 	EN	Convert file-type extensions
 
-MIPMIXER_MIX_FILTER_DESC
+MIPMIXER_CONVERT_EXT_DESC
 	EN	Convert to, and from, file extensions for MusicIP.
 
 MIPMIXER_MIX
