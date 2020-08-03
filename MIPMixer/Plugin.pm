@@ -299,7 +299,7 @@ sub _durationInRange() {
     my $minDuration = shift;
     my $maxDuration = shift;
     my $candidate = shift;
-    my $duration = $candidate->duration();
+    my $duration = $candidate->secs;
 
     if ($minDuration > 0 && $duration < $minDuration) {
         main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - duration (" . $duration . ") too short");
