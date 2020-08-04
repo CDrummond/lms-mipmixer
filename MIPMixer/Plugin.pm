@@ -35,7 +35,6 @@ use Plugins::MIPMixer::Common;
 use Plugins::MIPMixer::Settings;
 
 my $initialized = 0;
-my $MIPPort;
 my @genreSets = ();
 my $xmasGenres = {};
 my $allConfiguredGenres = {};
@@ -102,10 +101,6 @@ sub postinitPlugin {
             my ($client, $cb) = @_;
 
             my $seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, $NUM_SEED_TRACKS);
-            my $tracks = [];
-            my $tracksFilteredBySeeds = [];   # MIP tracks that matched seeds
-            my $tracksFilteredByCurrent = []; # MIP tracks that matched tracks already picked
-            my $tracksFilteredByPrev = [];    # MIP tracks that matched artists/albums already in queue
 
             # Get list of valid seeds...
             if ($seedTracks && ref $seedTracks && scalar @$seedTracks) {
@@ -128,134 +123,48 @@ sub postinitPlugin {
                 if (scalar @seedsToUse > 0) {
                     my %seedIdHash = map { $_ => 1 } @seedIds;
                     my $previousTracks = _getPreviousTracks($client, \%seedIdHash);
-                    my $numPrev = $previousTracks ? scalar(@$previousTracks) : 0;
-                    my $mix = _getMix(\@seedsToUse, \%seedIdHash);
-                    main::idleStreams();
+                    my $url = _getMixUrl(\@seedsToUse);
 
-                    if ($mix && scalar @$mix) {
-                        my %prevTrackIdHash = undef;
-                        if ($numPrev > 0) {
-                            my $idList = [];
-                            foreach my $track (@$previousTracks) {
-                                push @$idList, $track->id;
-                            }
-                            %prevTrackIdHash = map { $_ => 1 } @$idList;
-                        }
-
-                        my %genrehash = undef;
-                        my %xmashash = undef;
-                        if (scalar @seedGenres > 1) {
-                            %genrehash = map { $_ => 1 } @seedGenres;
-                        }
-
-                        my $minDuration = $prefs->get('min_duration') || 0;
-                        my $maxDuration = $prefs->get('max_duration') || 0;
-                        my $filterXmas = $prefs->get('filter_xmas');
-                        if ($filterXmas) {
-                            my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-                            if ($mon != 11) { # Months are 0..11
-                                $filterXmas = 0;
-                            }
-                        }
-
-                        my $excludeArtists = [];
-                        my $excludeAlbums = [];
-                        my $exclude = $prefs->get('exclude_artists');
-                        if ($exclude) {
-                            my @entries = split /,/, $exclude;
-                            foreach my $entry (@entries) {
-                                $entry =~ s/^\s+|\s+$//g;
-                                push @$excludeArtists, lc $entry;
+                    Slim::Networking::SimpleAsyncHTTP->new(
+                        sub {
+                            my $response = shift;
+                            main::DEBUGLOG && $log->debug("Recevied MIP response");
+                            my $mix = _handleMipResponse($response->content);
+                            $cb->($client, _getTracksFromMix(\@$mix, \@$previousTracks, \@seedsToUse, \%seedIdHash, \@seedGenres));
+                        },
+                        sub {
+                            my $response = shift;
+                            if ($response->code == 500 && $prefs->get('mix_filter')) {
+                                $log->warn("No mix returned with filter involved - we might want to try without it");
+                                $url =~ s/filter=/xfilter=/;
+                                Slim::Networking::SimpleAsyncHTTP->new(
+                                    sub {
+                                        my $response = shift;
+                                        main::DEBUGLOG && $log->debug("Recevied MIP response");
+                                        my $mix = _handleMipResponse($response->content);
+                                        $cb->($client, _getTracksFromMix(\@$mix, \@$previousTracks, \@seedsToUse, \%seedIdHash, \@seedGenres));
+                                    },
+                                    sub {
+                                        my $response = shift;
+                                        my $error  = $response->error;
+                                        main::DEBUGLOG && $log->debug("Failed to fetch URL: $error");
+                                        $cb->($client, []);
+                                    }
+                                )->get($url);
+                            } else {
+                                my $response = shift;
+                                my $error  = $response->error;
+                                main::DEBUGLOG && $log->debug("Failed to fetch URL: $error");
+                                $cb->($client, []);
                             }
                         }
-                        $exclude = $prefs->get('exclude_albums');
-                        if ($exclude) {
-                            my @entries = split /,/, $exclude;
-                            foreach my $entry (@entries) {
-                                $entry =~ s/^\s+|\s+$//g;
-                                push @$excludeAlbums, lc $entry;
-                            }
-                        }
-
-                        foreach my $candidate (@$mix) {
-                            if (_idInList('seed', \%seedIdHash, $candidate)) {
-                                next;
-                            }
-                            if ($numPrev > 0 && _idInList('prev', \%prevTrackIdHash, $candidate)) {
-                                next;
-                            }
-                            if (!_durationInRange($minDuration, $maxDuration, $candidate)) {
-                                next;
-                            }
-                            if (_excludeByGenre(%genrehash ? \%genrehash : undef, $filterXmas, $candidate)) {
-                                next;
-                            }
-                            if (_excludeArtist(\@$excludeArtists, $candidate)) {
-                                next;
-                            }
-                            if (_excludeAlbum(\@$excludeAlbums, $candidate)) {
-                                next;
-                            }
-                            if (_sameArtistOrAlbum('seed', \@seedsToUse, $candidate, 0)) {
-                                push @$tracksFilteredBySeeds, $candidate;
-                                next;
-                            }
-                            if (_sameArtistOrAlbum('current', \@$tracks, $candidate, 0)) {
-                                push @$tracksFilteredByCurrent, $candidate;
-                                next;
-                            }
-                            if ($numPrev > 0 && _sameArtistOrAlbum('prev', \@$previousTracks, $candidate, 1)) {
-                                push @$tracksFilteredByPrev, $candidate;
-                                next;
-                            }
-
-                            push @$tracks, $candidate;
-                            my $numTracks = scalar(@$tracks);
-                            main::DEBUGLOG && $log->debug($candidate->url . " passed all filters, count:" . $numTracks);
-                            if ($numTracks >= $NUM_TRACKS_TO_SHUFFLE) {
-                                main::DEBUGLOG && $log->debug("Have sufficient tracks");
-                                last;
-                            }
-                            main::idleStreams();
-                        }
-                    }
+                    )->get($url);
+                } else {
+                    $cb->($client, []);
                 }
+            } else {
+                $cb->($client, []);
             }
-
-            # Too few tracks? Add some from the filtered lists
-            my $numTracks = scalar @$tracks;
-            if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @$tracksFilteredByPrev > 0) {
-                main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByPrev " . $numTracks . "/" . scalar @$tracksFilteredByPrev);
-                $tracks = [ $tracks, splice(@$tracksFilteredByPrev, 0, $NUM_TRACKS_TO_USE - scalar(@$tracks)) ];
-                $numTracks = scalar @$tracks;
-            }
-            if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @$tracksFilteredByCurrent > 0) {
-                main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByCurrent " . $numTracks . "/" . scalar @$tracksFilteredByCurrent);
-                $tracks = [ $tracks, splice(@$tracksFilteredByCurrent, 0, $NUM_TRACKS_TO_USE - $numTracks) ];
-                $numTracks = scalar @$tracks;
-            }
-            if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @$tracksFilteredBySeeds > 0) {
-                main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByPrev " . $numTracks . "/" . scalar @$tracksFilteredBySeeds);
-                $tracks = [ $tracks, splice(@$tracksFilteredBySeeds, 0, $NUM_TRACKS_TO_USE - $numTracks) ];
-                $numTracks = scalar @$tracks;
-            }
-
-            # Shuffle tracks...
-            Slim::Player::Playlist::fischer_yates_shuffle($tracks);
-
-            # If we have more than NUM_TRACKS_TO_USE tracks, then use 1st NUM_TRACKS_TO_USE...
-            if ( $numTracks > $NUM_TRACKS_TO_USE ) {
-                main::DEBUGLOG && $log->debug("Trimming tracks (" . $numTracks . ")");
-                $tracks = [ splice(@$tracks, 0, $NUM_TRACKS_TO_USE) ];
-                $numTracks = scalar @$tracks;
-            }
-
-            main::DEBUGLOG && $log->debug("Return " . $numTracks . " tracks");
-            foreach my $track (@$tracks) {
-                main::DEBUGLOG && $log->debug(".... " . $track->title . ", " . $track->artistName . ", " . $track->albumname);
-            }
-
-            $cb->($client, $tracks);
         });
     }
 }
@@ -270,7 +179,7 @@ sub title {
     return 'MIPMIXER';
 }
 
-sub _getPreviousTracks() {
+sub _getPreviousTracks{
     my $client = shift;
     my $seedsHashRef = shift;
     my %seedsHash = %$seedsHashRef;
@@ -295,7 +204,7 @@ sub _getPreviousTracks() {
     return \@tracks
 }
 
-sub _durationInRange() {
+sub _durationInRange{
     my $minDuration = shift;
     my $maxDuration = shift;
     my $candidate = shift;
@@ -312,7 +221,7 @@ sub _durationInRange() {
     return 1;
 }
 
-sub _excludeByGenre() {
+sub _excludeByGenre{
     my $genrehashRef = shift;
     my $filterXmas = shift;
     my $candidate = shift;
@@ -353,7 +262,7 @@ sub _excludeByGenre() {
     return 0;
 }
 
-sub _excludeArtist() {
+sub _excludeArtist{
     my $a = shift;
     my $candidate = shift;
     my @artists = @$a;
@@ -367,7 +276,7 @@ sub _excludeArtist() {
     return 0;
 }
 
-sub _excludeAlbum() {
+sub _excludeAlbum{
     my $a = shift;
     my $candidate = shift;
     my @albums = @$a;
@@ -381,7 +290,7 @@ sub _excludeAlbum() {
     return 0;
 }
 
-sub _idInList() {
+sub _idInList {
     my $cat = shift;
     my $idHashRef = shift;
     my $candidate = shift;
@@ -393,7 +302,7 @@ sub _idInList() {
     return 0;
 }
 
-sub _sameArtistOrAlbum() {
+sub _sameArtistOrAlbum {
     my $cat = shift;
     my $trks = shift;
     my $candidate = shift;
@@ -488,12 +397,9 @@ sub _convertFromMip {
     return $fixed;
 }
 
-sub _getMix {
+sub _getMixUrl {
     my $seedTracks = shift;
     my @tracks = @$seedTracks;
-    my $idHashRef = shift;
-    my %idHash = %$idHashRef;
-    my @mix = ();
     my $req;
     my $res;
 
@@ -537,31 +443,21 @@ sub _getMix {
         'song=' . Plugins::MIPMixer::Common::escape(_convertToMip($id, $mipPath, $lmsPath, $convertExt));
     } @tracks);
 
-    main::DEBUGLOG && $log->debug("Request http://localhost:$MIPPort/api/mix?$mixArgs\&$argString");
+    my $url = "http://localhost:" . $prefs->get('port') . "/api/mix?$mixArgs\&$argString";
+    main::DEBUGLOG && $log->debug("Request $url");
+    return $url;
+}
 
-    my $response = _syncHTTPRequest("/api/mix?$mixArgs\&$argString");
+sub _handleMipResponse {
+    my $response = shift;
 
-    if ($response->is_error) {
-        if ($response->code == 500 && $filter) {
-            ::idleStreams();
-
-            # try again without the filter
-            $log->warn("No mix returned with filter involved - we might want to try without it");
-            $argString =~ s/filter=/xfilter=/;
-            $response = _syncHTTPRequest("/api/mix?$mixArgs\&$argString");
-
-            Plugins::MIPMixer::Common->grabFilters();
-        }
-
-        if ($response->is_error) {
-            $log->warn("Warning: Couldn't get mix: $mixArgs\&$argString");
-            main::DEBUGLOG && $log->debug($response->as_string);
-            return \@mix;
-        }
-    }
-
-    my @songs = split(/\n/, $response->content);
+    my @songs = split(/\n/, $response);
     my $count = scalar @songs;
+    my @mix = ();
+    my $mipPath = $prefs->get('mip_path');
+    my $mediaDirs = $serverprefs->get('mediadirs');
+    my $lmsPath = @$mediaDirs[0];
+    my $convertExt = $prefs->get('convert_ext') || 1;
 
     main::DEBUGLOG && $log->debug('Num tracks in response:' . $count);
     for (my $j = 0; $j < $count; $j++) {
@@ -575,12 +471,7 @@ sub _getMix {
             my $track = Slim::Schema->objectForUrl(Slim::Utils::Misc::fileURLFromPath($id));
 
             if (blessed $track) {
-                if (exists($idHash{$track->get_column('id')})) {
-                     main::DEBUGLOG && $log->debug('Skip seed track ' . $id);
-                } else {
-                    #main::DEBUGLOG && $log->debug('MIP: ' . $track->url);
-                    push @mix, $track;
-                }
+                push @mix, $track;
             } else {
                 main::DEBUGLOG && $log->debug('Failed to get track object for ' . $id);
             }
@@ -592,13 +483,145 @@ sub _getMix {
     return \@mix;
 }
 
-sub _syncHTTPRequest {
-    my $url = shift;
-    $MIPPort = $prefs->get('port') unless $MIPPort;
-    my $http = LWP::UserAgent->new;
-    $http->timeout($prefs->get('timeout') || 5);
-    return $http->get("http://localhost:$MIPPort$url");
+sub _getTracksFromMix {
+    my $mix = shift;
+    my $previousTracks = shift;
+    my $seedsToUseRef = shift;
+    my $seedIdHashRef = shift;
+    my $seedGenresRef = shift;
+    my @seedsToUse = @$seedsToUseRef;
+    my %seedIdHash = %$seedIdHashRef;
+    my @seedGenres = @$seedGenresRef;
+
+    my @tracks = ();
+    my @tracksFilteredBySeeds = ();   # MIP tracks that matched seeds
+    my @tracksFilteredByCurrent = (); # MIP tracks that matched tracks already picked
+    my @tracksFilteredByPrev = ();    # MIP tracks that matched artists/albums already in queue
+    if ($mix && scalar @$mix) {
+        my %prevTrackIdHash = undef;
+        my $numPrev = $previousTracks ? scalar(@$previousTracks) : 0;
+        if ($numPrev > 0) {
+            my $idList = [];
+            foreach my $track (@$previousTracks) {
+                push @$idList, $track->id;
+            }
+            %prevTrackIdHash = map { $_ => 1 } @$idList;
+        }
+        main::DEBUGLOG && $log->debug("Num tracks:" . scalar(@$mix) . ", seeds:" . scalar(@seedsToUse) . ", prev:" . $numPrev);
+
+        my %genrehash = undef;
+        my %xmashash = undef;
+        if (scalar @seedGenres > 1) {
+            %genrehash = map { $_ => 1 } @seedGenres;
+        }
+
+        my $minDuration = $prefs->get('min_duration') || 0;
+        my $maxDuration = $prefs->get('max_duration') || 0;
+        my $filterXmas = $prefs->get('filter_xmas');
+        if ($filterXmas) {
+            my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+            if ($mon != 11) { # Months are 0..11
+                $filterXmas = 0;
+            }
+        }
+
+        my $excludeArtists = [];
+        my $excludeAlbums = [];
+        my $exclude = $prefs->get('exclude_artists');
+        if ($exclude) {
+            my @entries = split /,/, $exclude;
+            foreach my $entry (@entries) {
+                $entry =~ s/^\s+|\s+$//g;
+                push @$excludeArtists, lc $entry;
+            }
+        }
+        $exclude = $prefs->get('exclude_albums');
+        if ($exclude) {
+            my @entries = split /,/, $exclude;
+            foreach my $entry (@entries) {
+                $entry =~ s/^\s+|\s+$//g;
+                push @$excludeAlbums, lc $entry;
+            }
+        }
+
+        foreach my $candidate (@$mix) {
+            if (_idInList('seed', \%seedIdHash, $candidate)) {
+                next;
+            }
+            if ($numPrev > 0 && _idInList('prev', \%prevTrackIdHash, $candidate)) {
+                next;
+            }
+            if (!_durationInRange($minDuration, $maxDuration, $candidate)) {
+                next;
+            }
+            if (_excludeByGenre(%genrehash ? \%genrehash : undef, $filterXmas, $candidate)) {
+                next;
+            }
+            if (_excludeArtist(\@$excludeArtists, $candidate)) {
+                next;
+            }
+            if (_excludeAlbum(\@$excludeAlbums, $candidate)) {
+                next;
+            }
+            if (_sameArtistOrAlbum('seed', \@seedsToUse, $candidate, 0)) {
+                push @tracksFilteredBySeeds, $candidate;
+                next;
+            }
+            if (_sameArtistOrAlbum('current', \@tracks, $candidate, 0)) {
+                push @tracksFilteredByCurrent, $candidate;
+                next;
+            }
+            if ($numPrev > 0 && _sameArtistOrAlbum('prev', \@$previousTracks, $candidate, 1)) {
+                push @tracksFilteredByPrev, $candidate;
+                next;
+            }
+
+            push @tracks, $candidate;
+            my $numTracks = scalar(@tracks);
+            main::DEBUGLOG && $log->debug($candidate->url . " passed all filters, count:" . $numTracks);
+            if ($numTracks >= $NUM_TRACKS_TO_SHUFFLE) {
+                main::DEBUGLOG && $log->debug("Have sufficient tracks");
+                last;
+            }
+            main::idleStreams();
+        }
+    }
+
+    # Too few tracks? Add some from the filtered lists
+    my $numTracks = scalar @tracks;
+    if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @tracksFilteredByPrev > 0) {
+        main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByPrev " . $numTracks . "/" . scalar @tracksFilteredByPrev);
+        @tracks = ( @tracks, splice(@tracksFilteredByPrev, 0, $NUM_TRACKS_TO_USE - scalar(@tracks)) );
+        $numTracks = scalar @tracks;
+    }
+    if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @tracksFilteredByCurrent > 0) {
+        main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByCurrent " . $numTracks . "/" . scalar @tracksFilteredByCurrent);
+        @tracks = ( @tracks, splice(@tracksFilteredByCurrent, 0, $NUM_TRACKS_TO_USE - $numTracks) );
+        $numTracks = scalar @tracks;
+    }
+    if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @tracksFilteredBySeeds > 0) {
+        main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByPrev " . $numTracks . "/" . scalar @tracksFilteredBySeeds);
+        @tracks = ( @tracks, splice(@tracksFilteredBySeeds, 0, $NUM_TRACKS_TO_USE - $numTracks) );
+        $numTracks = scalar @tracks;
+    }
+
+    # Shuffle tracks...
+    Slim::Player::Playlist::fischer_yates_shuffle(\@tracks);
+
+    # If we have more than NUM_TRACKS_TO_USE tracks, then use 1st NUM_TRACKS_TO_USE...
+    if ( $numTracks > $NUM_TRACKS_TO_USE ) {
+        main::DEBUGLOG && $log->debug("Trimming tracks (" . $numTracks . ")");
+        @tracks = splice(@tracks, 0, $NUM_TRACKS_TO_USE);
+        $numTracks = scalar @tracks;
+    }
+
+    main::DEBUGLOG && $log->debug("Return " . $numTracks . " tracks");
+    foreach my $track (@tracks) {
+        main::DEBUGLOG && $log->debug(".... " . $track->title . ", " . $track->artistName . ", " . $track->albumname);
+    }
+    return \@tracks;
 }
+
 
 sub _initGenres {
     my $filePath = Slim::Utils::Prefs::dir() . "/genres.json";
