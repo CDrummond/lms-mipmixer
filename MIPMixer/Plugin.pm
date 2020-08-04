@@ -554,6 +554,7 @@ sub _getTracksFromMix {
             if (!_durationInRange($minDuration, $maxDuration, $candidate)) {
                 next;
             }
+            main::idleStreams();
             if (_excludeByGenre(%genrehash ? \%genrehash : undef, $filterXmas, $candidate)) {
                 next;
             }
@@ -583,7 +584,6 @@ sub _getTracksFromMix {
                 main::DEBUGLOG && $log->debug("Have sufficient tracks");
                 last;
             }
-            main::idleStreams();
         }
     }
 
