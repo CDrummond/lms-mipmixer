@@ -16,8 +16,7 @@ import sys
 
 
 REPO_XML = "repo.xml"
-PLUGIN_NAME = "MIP Mixer"
-PLUGIN_FOLDER_NAME = "MIPMixer"
+PLUGIN_NAME = "MIPMixer"
 PLUGIN_GIT_NAME = "lms-mipmixer"
 
 def info(s):
@@ -69,7 +68,7 @@ def updateLine(line, startStr, endStr, updateStr):
 def updateInstallXml(version):
     lines=[]
     updated=False
-    installXml = "%s/install.xml" % PLUGIN_FOLDER_NAME
+    installXml = "%s/install.xml" % PLUGIN_NAME
     info("Updating %s" % installXml)
     with open(installXml, "r") as f:
         lines=f.readlines()
@@ -89,7 +88,7 @@ def updateInstallXml(version):
 def createZip(version):
     info("Creating ZIP")
     zipFile="%s-%s" % (PLUGIN_GIT_NAME, version)
-    shutil.make_archive(zipFile, 'zip', PLUGIN_FOLDER_NAME)
+    shutil.make_archive(zipFile, 'zip', PLUGIN_NAME)
     zipFile+=".zip"
     return zipFile
 
