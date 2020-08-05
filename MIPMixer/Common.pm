@@ -1,5 +1,14 @@
 package Plugins::MIPMixer::Common;
 
+#
+# LMS-MIPMixer
+#
+# Copyright (c) 2020 Craig Drummond <craig.p.drummond@gmail.com>
+#
+# GPLv2 license.
+#
+
+# - Initially based upon MusicMagic Plugin of LMS 8.0 -
 
 # Logitech Media Server Copyright 2001-2020 Logitech
 # This program is free software; you can redistribute it and/or
