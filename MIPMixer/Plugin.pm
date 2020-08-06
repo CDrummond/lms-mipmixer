@@ -184,7 +184,7 @@ sub title {
     return 'MIPMIXER';
 }
 
-sub _getPreviousTracks{
+sub _getPreviousTracks {
     my $client = shift;
     my $seedsHashRef = shift;
     my %seedsHash = %$seedsHashRef;
@@ -209,7 +209,7 @@ sub _getPreviousTracks{
     return \@tracks
 }
 
-sub _durationInRange{
+sub _durationInRange {
     my $minDuration = shift;
     my $maxDuration = shift;
     my $candidate = shift;
@@ -226,12 +226,18 @@ sub _durationInRange{
     return 1;
 }
 
-sub _excludeByGenre{
+sub _excludeByGenre {
     my $genrehashRef = shift;
     my $filterXmas = shift;
     my $candidate = shift;
+
+    if (!$genrehashRef && !%$allConfiguredGenres) {
+        return 0;
+    }
+
     my @cgenres = _getCandidateGenres($candidate->get_column('id'));
     my $count = scalar @cgenres;
+
 
     if ($filterXmas) {
         my %hash = %$xmasGenres;
@@ -267,7 +273,7 @@ sub _excludeByGenre{
     return 0;
 }
 
-sub _excludeArtist{
+sub _excludeArtist {
     my $a = shift;
     my $candidate = shift;
     my @artists = @$a;
@@ -281,7 +287,7 @@ sub _excludeArtist{
     return 0;
 }
 
-sub _excludeAlbum{
+sub _excludeAlbum {
     my $a = shift;
     my $candidate = shift;
     my @albums = @$a;
@@ -515,7 +521,9 @@ sub _getTracksFromMix {
 
         my %genrehash = undef;
         my %xmashash = undef;
-        if (scalar @seedGenres > 1) {
+        my $filterGenres = $prefs->get('filter_genres');
+
+        if ($filterGenres && scalar @seedGenres > 0) {
             %genrehash = map { $_ => 1 } @seedGenres;
         }
 
@@ -558,9 +566,11 @@ sub _getTracksFromMix {
             if (!_durationInRange($minDuration, $maxDuration, $candidate)) {
                 next;
             }
-            main::idleStreams();
-            if (_excludeByGenre(%genrehash ? \%genrehash : undef, $filterXmas, $candidate)) {
-                next;
+            if ($filterGenres) {
+                main::idleStreams();
+                if (_excludeByGenre(scalar @seedGenres > 0 ? \%genrehash : undef, $filterXmas, $candidate)) {
+                    next;
+                }
             }
             if (_excludeArtist(\@$excludeArtists, $candidate)) {
                 next;
