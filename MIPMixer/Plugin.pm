@@ -373,8 +373,8 @@ sub _convertFromMip {
     my $path = shift;
     my $mipPath = shift;
     my $lmsPath = shift;
-    my $fixed = $path;
     my $convertExt = shift;
+    my $fixed = $path;
 
     if ($convertExt) {
         my @parts = split(/\.CUE_TRACK\./, $path);
