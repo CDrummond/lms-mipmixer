@@ -18,7 +18,6 @@ package Plugins::MIPMixer::Plugin;
 use strict;
 
 use Scalar::Util qw(blessed);
-use LWP::UserAgent;
 use URI::Escape qw(uri_escape_utf8);
 use JSON::XS::VersionOneAndTwo;
 use File::Basename;
