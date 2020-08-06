@@ -1,6 +1,6 @@
 0.0.2
 -----
-1. Turn of extension conversion by default.
+1. Disable extension conversion by default.
 2. Correctly read extension conversion config item.
 3. Fix not filtering by genre.
 

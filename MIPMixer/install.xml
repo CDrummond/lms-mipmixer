@@ -4,7 +4,7 @@
 	<id>aff53c19-f7ca-46be-b38d-3fc1883455aa</id>
 	<name>MIPMIXER</name>
 	<module>Plugins::MIPMixer::Plugin</module>
-	<version>0.0.1</version>
+	<version>0.0.2</version>
 	<description>MIPMIXER_DESC</description>
 	<creator>Craig Drummond</creator>
 	<defaultState>
