@@ -150,16 +150,12 @@ sub postinitPlugin {
                                         $cb->($client, _getTracksFromMix(\@$mix, \@$previousTracks, \@seedsToUse, \%seedIdHash, \@seedGenres));
                                     },
                                     sub {
-                                        my $response = shift;
-                                        my $error  = $response->error;
-                                        main::DEBUGLOG && $log->debug("Failed to fetch URL: $error");
+                                        main::DEBUGLOG && $log->debug("Failed to fetch mix");
                                         $cb->($client, []);
                                     }
                                 )->get($url);
                             } else {
-                                my $response = shift;
-                                my $error  = $response->error;
-                                main::DEBUGLOG && $log->debug("Failed to fetch URL: $error");
+                                main::DEBUGLOG && $log->debug("Failed to fetch mix");
                                 $cb->($client, []);
                             }
                         }
