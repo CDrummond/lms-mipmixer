@@ -1,3 +1,8 @@
+0.0.2
+-----
+1. Turn of extension conversion by default.
+2. Correctly read extension conversion config item.
+
 0.0.1
 -----
 1. Initial release.

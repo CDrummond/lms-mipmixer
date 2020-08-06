@@ -84,7 +84,7 @@ sub initPlugin {
         max_duration    => 0,
         port            => 10002,
         mip_path        => '',
-        convert_ext     => !main::ISWINDOWS && !main::ISMAC ? 1 : 0
+        convert_ext     => 0
     });
 
     if ( main::WEBUI ) {
@@ -431,8 +431,7 @@ sub _getMixUrl {
     my $mipPath = $prefs->get('mip_path');
     my $mediaDirs = $serverprefs->get('mediadirs');
     my $lmsPath = @$mediaDirs[0];
-    my $convertExt = $prefs->get('convert_ext') || 1;
-
+    my $convertExt = $prefs->get('convert_ext');
     if ($filter) {
         $filter = Slim::Utils::Unicode::utf8decode_locale($filter);
         main::DEBUGLOG && $log->debug("Filter $filter in use.");
