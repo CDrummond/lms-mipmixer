@@ -227,13 +227,12 @@ sub _excludeByGenre {
     my $filterXmas = shift;
     my $candidate = shift;
 
-    if (!$genrehashRef && !%$allConfiguredGenres) {
+    if (!$genrehashRef && !%$allConfiguredGenres && !$filterXmas) {
         return 0;
     }
 
     my @cgenres = _getCandidateGenres($candidate->get_column('id'));
     my $count = scalar @cgenres;
-
 
     if ($filterXmas) {
         my %hash = %$xmasGenres;
@@ -562,7 +561,7 @@ sub _getTracksFromMix {
             if (!_durationInRange($minDuration, $maxDuration, $candidate)) {
                 next;
             }
-            if ($filterGenres) {
+            if ($filterGenres || $filterXmas) {
                 main::idleStreams();
                 if (_excludeByGenre(scalar @seedGenres > 0 ? \%genrehash : undef, $filterXmas, $candidate)) {
                     next;

@@ -1,3 +1,8 @@
+0.0.3
+-----
+1. If 'Filter Christmas' is enabled, and its December, then we still need to do
+   genre filtering.
+
 0.0.2
 -----
 1. Disable extension conversion by default.
