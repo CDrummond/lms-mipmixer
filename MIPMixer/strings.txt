@@ -44,7 +44,7 @@ MIPMIXER_FILTER_GENRES
 	EN	Restrict genres
 
 MIPMIXER_FILTER_GENRES_DESC
-	EN	Restrict mix to the genres similar to that of the seed (Default: Yes)
+	EN	Restrict mix to the genres similar to that of the seed tracks - genre similarity is configured in a separate file. This will also exclude tracks whose genre is in a configured set and the seed tracks are not. e.g. if you have "Metal" and "Rock" as a genre group, and a seed track is in this group, then only "Metal" or "Rock" tracks will be accepted. Conversely, if a seed track's genre is not in a genre group, then tracks whose genres are in a genre group will be refused. e.g. if a seed track is "Pop", then a "Metal" track would be refused - even if there is no genre group containing "Pop". (Default: Yes)
 
 MIPMIXER_EXCLUDE_ARTISTS
 	EN	Exclude artists from mixes
