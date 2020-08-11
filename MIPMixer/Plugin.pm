@@ -224,6 +224,7 @@ sub _durationInRange {
 
 sub _excludeByGenre {
     my $genrehashRef = shift;
+    my $filterGenres = shift;
     my $filterXmas = shift;
     my $candidate = shift;
 
@@ -244,23 +245,25 @@ sub _excludeByGenre {
         }
     }
 
-    if ($genrehashRef) {
-        my %hash = %$genrehashRef;
-        for (my $i = 0; $i < $count; $i++) {
-            if (exists($hash{$cgenres[$i]})) {
-                main::DEBUGLOG && $log->debug($candidate->url . " matched on configured genre " . $cgenres[$i]);
-                return 0;
+    if ($filterGenres) {
+        if ($genrehashRef) {
+            my %hash = %$genrehashRef;
+            for (my $i = 0; $i < $count; $i++) {
+                if (exists($hash{$cgenres[$i]})) {
+                    main::DEBUGLOG && $log->debug($candidate->url . " matched on configured genre " . $cgenres[$i]);
+                    return 0;
+                }
             }
-        }
-        main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - failed to match genre");
-        return 1;
-    } else {
-        # No seed genres - i.e. genre of seed track was not in configured list, so check this tracks genre is not in list...
-        my %hash = %$allConfiguredGenres;
-        for (my $i = 0; $i < $count; $i++) {
-            if (exists($hash{$cgenres[$i]})) {
-                main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched on configured genre " . $cgenres[$i] . " not in seeds");
-                return 1;
+            main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - failed to match genre");
+            return 1;
+        } elsif (%$allConfiguredGenres) {
+            # No seed genres - i.e. genre of seed track was not in configured list, so check this tracks genre is not in list...
+            my %hash = %$allConfiguredGenres;
+            for (my $i = 0; $i < $count; $i++) {
+                if (exists($hash{$cgenres[$i]})) {
+                    main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched on configured genre " . $cgenres[$i] . " not in seeds");
+                    return 1;
+                }
             }
         }
     }
@@ -563,7 +566,7 @@ sub _getTracksFromMix {
             }
             if ($filterGenres || $filterXmas) {
                 main::idleStreams();
-                if (_excludeByGenre(scalar @seedGenres > 0 ? \%genrehash : undef, $filterXmas, $candidate)) {
+                if (_excludeByGenre(scalar @seedGenres > 0 ? \%genrehash : undef, $filterGenres, $filterXmas, $candidate)) {
                     next;
                 }
             }

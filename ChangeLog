@@ -2,6 +2,7 @@
 -----
 1. If 'Filter Christmas' is enabled, and its December, then we still need to do
    genre filtering.
+2. If 'Restrict genres' is disabled then don't do genre filtering.
 
 0.0.2
 -----
