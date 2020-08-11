@@ -530,7 +530,7 @@ sub _getTracksFromMix {
         my $filterXmas = $prefs->get('filter_xmas');
         if ($filterXmas) {
             my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-            if ($mon != 11) { # Months are 0..11
+            if ($mon == 11) { # Months are 0..11 Xmas filter is disabled for December
                 $filterXmas = 0;
             }
         }
