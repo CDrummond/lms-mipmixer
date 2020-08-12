@@ -262,7 +262,7 @@ sub _excludeByGenre {
             for (my $i = 0; $i < $count; $i++) {
                 if (exists($hash{$cgenres[$i]})) {
                     main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched on configured genre " . $cgenres[$i] . " not in seeds");
-                    return 1;
+                    return 2;
                 }
             }
         }
@@ -502,9 +502,10 @@ sub _getTracksFromMix {
     my @seedGenres = @$seedGenresRef;
 
     my @tracks = ();
-    my @tracksFilteredBySeeds = ();   # MIP tracks that matched seeds
-    my @tracksFilteredByCurrent = (); # MIP tracks that matched tracks already picked
-    my @tracksFilteredByPrev = ();    # MIP tracks that matched artists/albums already in queue
+    my @tracksFilteredBySeeds = ();               # MIP tracks that matched seeds
+    my @tracksFilteredByCurrent = ();             # MIP tracks that matched tracks already picked
+    my @tracksFilteredByPrev = ();                # MIP tracks that matched artists/albums already in queue
+    my @tracksFilteredBySeedNotInGenreGroup = (); # MIP tracks that were in a genre group, but seed tracks were not
     if ($mix && scalar @$mix) {
         my %prevTrackIdHash = undef;
         my $numPrev = $previousTracks ? scalar(@$previousTracks) : 0;
@@ -566,7 +567,11 @@ sub _getTracksFromMix {
             }
             if ($filterGenres || $filterXmas) {
                 main::idleStreams();
-                if (_excludeByGenre(scalar @seedGenres > 0 ? \%genrehash : undef, $filterGenres, $filterXmas, $candidate)) {
+                my $genreExclude = _excludeByGenre(scalar @seedGenres > 0 ? \%genrehash : undef, $filterGenres, $filterXmas, $candidate);
+                if ($genreExclude > 0) {
+                    if ($genreExclude > 1) {
+                        push @tracksFilteredBySeedNotInGenreGroup, $candidate;
+                    }
                     next;
                 }
             }
@@ -614,6 +619,11 @@ sub _getTracksFromMix {
     if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @tracksFilteredBySeeds > 0) {
         main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByPrev " . $numTracks . "/" . scalar @tracksFilteredBySeeds);
         @tracks = ( @tracks, splice(@tracksFilteredBySeeds, 0, $NUM_TRACKS_TO_USE - $numTracks) );
+        $numTracks = scalar @tracks;
+    }
+    if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @tracksFilteredBySeedNotInGenreGroup > 0) {
+        main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredBySeedNotInGenreGroup " . $numTracks . "/" . scalar @tracksFilteredBySeedNotInGenreGroup);
+        @tracks = ( @tracks, splice(@tracksFilteredBySeedNotInGenreGroup, 0, $NUM_TRACKS_TO_USE - $numTracks) );
         $numTracks = scalar @tracks;
     }
 

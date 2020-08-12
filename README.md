@@ -28,7 +28,12 @@ Genres are configured via editing `genres.json` using the following syntax:
 
 If a seed track has `Hard Rock` as its genre, then only tracks with `Rock`, 
 `Hard Rock`, or `Metal` will be allowed. If a seed track has a genre that is not
-listed here then any track returned by MusicIP will be considered acceptable.
+listed here then any track returned by MusicIP, whose genre is not in one of
+these groups, will be considered acceptable.
 
 `genres.json` should be placed within you LMS's `prefs` folder. If this is not
 found there, then the plugin will use its own version.
+
+If too many tracks are filtered out due to matching previous, current, or seed
+tracks, or not having genre in a group, then some of these filtered tracks will
+be used to obtain the minimum required.
