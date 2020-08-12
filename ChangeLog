@@ -7,6 +7,7 @@
 4. If a seed track is not in a genre group, we will filter out tracks which are
    in a genre group. If this removes too many, then some of these might still be
    used. (This is then a 'soft' filter).
+5. Add 10 tracks from mix to queue, and attempt to at least add 5.
 
 0.0.2
 -----

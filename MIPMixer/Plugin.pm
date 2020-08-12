@@ -45,8 +45,9 @@ my $xmasGenres = {};
 my $allConfiguredGenres = {};
 my $NUM_TRACKS = 50; # Request a *LOT* of tracks so that we can filter on genre, artist, and album
 my $NUM_TRACKS_REPEAT_ARTIST = 25;
-my $NUM_TRACKS_TO_USE = 5;
-my $NUM_TRACKS_TO_SHUFFLE = 12;
+my $DESIRED_NUM_TRACKS_TO_USE = 10;
+my $MIN_NUM_TRACKS_TO_USE = 5;
+my $NUM_TRACKS_TO_SHUFFLE = 15;
 my $NUM_SEED_TRACKS = 5;
 my $NUM_PREV_TRACKS_FILTER_ARTIST = 15;
 my $NUM_PREV_TRACKS_FILTER_ALBUM = 25; # Must >= NUM_PREV_TRACKS_FILTER_ARTIST
@@ -606,34 +607,34 @@ sub _getTracksFromMix {
 
     # Too few tracks? Add some from the filtered lists
     my $numTracks = scalar @tracks;
-    if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @tracksFilteredByPrev > 0) {
+    if ( $numTracks < $MIN_NUM_TRACKS_TO_USE && scalar @tracksFilteredByPrev > 0) {
         main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByPrev " . $numTracks . "/" . scalar @tracksFilteredByPrev);
-        @tracks = ( @tracks, splice(@tracksFilteredByPrev, 0, $NUM_TRACKS_TO_USE - scalar(@tracks)) );
+        @tracks = ( @tracks, splice(@tracksFilteredByPrev, 0, $MIN_NUM_TRACKS_TO_USE - scalar(@tracks)) );
         $numTracks = scalar @tracks;
     }
-    if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @tracksFilteredByCurrent > 0) {
+    if ( $numTracks < $MIN_NUM_TRACKS_TO_USE && scalar @tracksFilteredByCurrent > 0) {
         main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByCurrent " . $numTracks . "/" . scalar @tracksFilteredByCurrent);
-        @tracks = ( @tracks, splice(@tracksFilteredByCurrent, 0, $NUM_TRACKS_TO_USE - $numTracks) );
+        @tracks = ( @tracks, splice(@tracksFilteredByCurrent, 0, $MIN_NUM_TRACKS_TO_USE - $numTracks) );
         $numTracks = scalar @tracks;
     }
-    if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @tracksFilteredBySeeds > 0) {
+    if ( $numTracks < $MIN_NUM_TRACKS_TO_USE && scalar @tracksFilteredBySeeds > 0) {
         main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByPrev " . $numTracks . "/" . scalar @tracksFilteredBySeeds);
-        @tracks = ( @tracks, splice(@tracksFilteredBySeeds, 0, $NUM_TRACKS_TO_USE - $numTracks) );
+        @tracks = ( @tracks, splice(@tracksFilteredBySeeds, 0, $MIN_NUM_TRACKS_TO_USE - $numTracks) );
         $numTracks = scalar @tracks;
     }
-    if ( $numTracks < $NUM_TRACKS_TO_USE && scalar @tracksFilteredBySeedNotInGenreGroup > 0) {
+    if ( $numTracks < $MIN_NUM_TRACKS_TO_USE && scalar @tracksFilteredBySeedNotInGenreGroup > 0) {
         main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredBySeedNotInGenreGroup " . $numTracks . "/" . scalar @tracksFilteredBySeedNotInGenreGroup);
-        @tracks = ( @tracks, splice(@tracksFilteredBySeedNotInGenreGroup, 0, $NUM_TRACKS_TO_USE - $numTracks) );
+        @tracks = ( @tracks, splice(@tracksFilteredBySeedNotInGenreGroup, 0, $MIN_NUM_TRACKS_TO_USE - $numTracks) );
         $numTracks = scalar @tracks;
     }
 
     # Shuffle tracks...
     Slim::Player::Playlist::fischer_yates_shuffle(\@tracks);
 
-    # If we have more than NUM_TRACKS_TO_USE tracks, then use 1st NUM_TRACKS_TO_USE...
-    if ( $numTracks > $NUM_TRACKS_TO_USE ) {
+    # If we have more than DESIRED_NUM_TRACKS_TO_USE tracks, then use 1st DESIRED_NUM_TRACKS_TO_USE...
+    if ( $numTracks > $DESIRED_NUM_TRACKS_TO_USE ) {
         main::DEBUGLOG && $log->debug("Trimming tracks (" . $numTracks . ")");
-        @tracks = splice(@tracks, 0, $NUM_TRACKS_TO_USE);
+        @tracks = splice(@tracks, 0, $DESIRED_NUM_TRACKS_TO_USE);
         $numTracks = scalar @tracks;
     }
 
