@@ -645,13 +645,12 @@ sub _getTracksFromMix {
     return \@tracks;
 }
 
-
 sub _initGenres {
     my $filePath = Slim::Utils::Prefs::dir() . "/genres.json";
     if (! -e $filePath) {
         $filePath = dirname(__FILE__) . "/genres.json";
     }
-    
+
     my $json = read_file($filePath);
     my $data = decode_json($json);
     my $dbh = Slim::Schema->dbh;
@@ -678,6 +677,7 @@ sub _initGenres {
                 push(@genreSets, $set);
             }
         }
+        main::DEBUGLOG && $log->debug("Confgured genres: " . Data::Dump::dump(@genreSets));
     }
 
     # Chistmas...
@@ -691,6 +691,7 @@ sub _initGenres {
             }
         }
     }
+    main::DEBUGLOG && $log->debug("Christmas genres: " . Data::Dump::dump($xmasGenres));
 }
 
 sub _getSeedGenres {
