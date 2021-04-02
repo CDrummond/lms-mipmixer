@@ -1,3 +1,7 @@
+0.0.4
+-----
+1. Only covert .m4a to .m4a.mp3 and vice-versa.
+
 0.0.3
 -----
 1. If 'Filter Christmas' is enabled, and its December, then we still need to do

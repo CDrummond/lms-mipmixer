@@ -359,7 +359,10 @@ sub _convertToMip {
             $fixed = $parts[0] . ".CUE_TRACK." . $parts[1] . ".mp3";
         }
         if (!main::ISWINDOWS && !main::ISMAC) {
-            if (! ('.mp3' eq substr $fixed, -length('.mp3'))) {
+            #if (! ('.mp3' eq substr $fixed, -length('.mp3'))) {
+            #    $fixed = $fixed . ".mp3";
+            #}
+            if ('.m4a' eq substr $fixed, -length('.4a')) {
                 $fixed = $fixed . ".mp3";
             }
         }
@@ -390,10 +393,10 @@ sub _convertFromMip {
         if (!main::ISWINDOWS && !main::ISMAC) {
             if ('.m4a.mp3' eq substr $fixed, -length('.m4a.mp3')) {
                 $fixed = substr $fixed, 0, -4;
-            } elsif ('.ogg.mp3' eq substr $fixed, -length('.ogg.mp3')) {
-                $fixed = substr $fixed, 0, -4;
-            } elsif ('.flac.mp3' eq substr $fixed, -length('.flac.mp3')) {
-                $fixed = substr $fixed, 0, -4;
+            #} elsif ('.ogg.mp3' eq substr $fixed, -length('.ogg.mp3')) {
+            #    $fixed = substr $fixed, 0, -4;
+            #} elsif ('.flac.mp3' eq substr $fixed, -length('.flac.mp3')) {
+            #    $fixed = substr $fixed, 0, -4;
             }
         }
     }
