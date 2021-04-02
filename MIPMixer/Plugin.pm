@@ -547,7 +547,9 @@ sub _getTracksFromMix {
             my @entries = split /\n/, $exclude;
             foreach my $entry (@entries) {
                 $entry =~ s/^\s+|\s+$//g;
-                push @$excludeArtists, lc $entry;
+                if ($entry ne "") {
+                    push @$excludeArtists, lc $entry;
+                }
             }
         }
         $exclude = $prefs->get('exclude_albums');
@@ -555,7 +557,9 @@ sub _getTracksFromMix {
             my @entries = split /\n/, $exclude;
             foreach my $entry (@entries) {
                 $entry =~ s/^\s+|\s+$//g;
-                push @$excludeAlbums, lc $entry;
+                if ($entry ne "") {
+                    push @$excludeAlbums, lc $entry;
+                }
             }
         }
 
