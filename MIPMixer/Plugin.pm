@@ -362,7 +362,7 @@ sub _convertToMip {
             #if (! ('.mp3' eq substr $fixed, -length('.mp3'))) {
             #    $fixed = $fixed . ".mp3";
             #}
-            if ('.m4a' eq substr $fixed, -length('.4a')) {
+            if ('.m4a' eq substr $fixed, -length('.m4a')) {
                 $fixed = $fixed . ".mp3";
             }
         }
