@@ -50,13 +50,13 @@ MIPMIXER_EXCLUDE_ARTISTS
 	EN	Exclude artists from mixes
 
 MIPMIXER_EXCLUDE_ARTISTS_DESC
-	EN	Comma-separated list of artist names to exclude from mixes
+	EN	List of artist names (each on a separate line) to exclude from mixes.
 
 MIPMIXER_EXCLUDE_ALBUMS
 	EN	Exclude albums from mixes
 
 MIPMIXER_EXCLUDE_ALBUMS_DESC
-	EN	Comma-separated list of albums to exclude from mixes. Use 'AlbumArtist - Album'
+	EN	List of albums (each on a separate line) to exclude from mixes. Use 'AlbumArtist - Album'
 
 MIPMIXER_FILTER_XMAS
 	EN	Exclude 'Christmas' genre
