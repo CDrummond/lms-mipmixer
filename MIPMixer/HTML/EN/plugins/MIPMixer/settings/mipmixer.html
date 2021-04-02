@@ -25,11 +25,11 @@
         [% END %]
 
         [% WRAPPER settingGroup title="MIPMIXER_EXCLUDE_ARTISTS" desc="MIPMIXER_EXCLUDE_ARTISTS_DESC" %]
-            <input type="text" class="stdedit" name="pref_exclude_artists" id="exclude_artists" value="[% prefs.pref_exclude_artists %]" size="80">
+            <textarea class="stdedit" name="pref_exclude_artists" id="exclude_artists" cols="45" rows="5">[% prefs.pref_exclude_artists %]</textarea>
         [% END %]
 
         [% WRAPPER settingGroup title="MIPMIXER_EXCLUDE_ALBUMS" desc="MIPMIXER_EXCLUDE_ALBUMS_DESC" %]
-            <input type="text" class="stdedit" name="pref_exclude_albums" id="exclude_albums" value="[% prefs.pref_exclude_albums %]" size="80">
+            <textarea class="stdedit" name="pref_exclude_albums" id="exclude_albums" cols="45" rows="5">[% prefs.pref_exclude_albums %]</textarea>
         [% END %]
 
         [% IF prefs.exists('pref_min_duration') %]
