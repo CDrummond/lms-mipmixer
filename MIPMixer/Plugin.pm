@@ -635,6 +635,13 @@ sub _getTracksFromMix {
         $numTracks = scalar @tracks;
     }
 
+    # Always take from 1st 2*DESIRED_NUM_TRACKS_TO_USE tracks
+    if ( $numTracks > ($DESIRED_NUM_TRACKS_TO_USE*2) ) {
+        main::DEBUGLOG && $log->debug("Pre-trimming tracks (" . $numTracks . ")");
+        @tracks = splice(@tracks, 0, $DESIRED_NUM_TRACKS_TO_USE*2);
+        $numTracks = scalar @tracks;
+    }
+
     # Shuffle tracks...
     Slim::Player::Playlist::fischer_yates_shuffle(\@tracks);
 
