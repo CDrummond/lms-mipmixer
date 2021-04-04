@@ -332,6 +332,7 @@ sub _sameArtistAndTitle {
 
     foreach my $track (@tracks) {
         if ( (_normalize($track->artistName()) eq $cArtist) && (_normalize($track->title) eq $cTitle) ) {
+            main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched artist & title " . $track->artistName() . " - " . $track->title);
             return 1;
         }
     }
