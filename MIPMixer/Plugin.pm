@@ -315,20 +315,43 @@ sub _idInList {
     return 0;
 }
 
+sub _normalize {
+    my $str = shift;
+    $str = lc Slim::Utils::Text::ignorePunct($str);
+    $str =~ s/\sfeaturing\s/ ft /o;
+    $str =~ s/\sfeat\s/ ft /o;
+    return $str;
+}
+
+sub _sameArtistAndTitle {
+    my $trks = shift;
+    my $candidate = shift;
+    my @tracks = @$trks;
+    my $cArtist = _normalize($candidate->artistName());
+    my $cTitle = _normalize($candidate->title);
+
+    foreach my $track (@tracks) {
+        if ( (_normalize($track->artistName()) eq $cArtist) && (_normalize($track->title) eq $cTitle) ) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 sub _sameArtistOrAlbum {
     my $cat = shift;
     my $trks = shift;
     my $candidate = shift;
     my $isPrevTracks = shift;
     my @tracks = @$trks;
-    my $cArtistId = $candidate->artistid();
-    my $cAlbumId = lc $candidate->albumid();
+    my $cArtist = _normalize($candidate->artistName());
+    my $cAlbumId = $candidate->albumid();
     my $cAlbumArtist = undef;
     my $cIsVarious = 0;
     my $checked = 0;
 
     foreach my $track (@tracks) {
-        if ($track->artistid() == $cArtistId) {
+        if (_normalize($track->artistName()) eq $cArtist) {
             if ($isPrevTracks && $checked > $NUM_PREV_TRACKS_FILTER_ARTIST) {
                 if ($track->albumid() == $cAlbumId) {
                     main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album " . $track->artistName() . " - " . $track->albumname() . " (" . $cat . ")");
@@ -604,6 +627,9 @@ sub _getTracksFromMix {
                 next;
             }
             if (_excludeAlbum(\@$excludeAlbums, $candidate)) {
+                next;
+            }
+            if (_sameArtistAndTitle(\@tracks, $candidate) || ($numPrev > 0 && _sameArtistAndTitle(\@$previousTracks, $candidate))) {
                 next;
             }
             if (_sameArtistOrAlbum('seed', \@seedsToUse, $candidate, 0)) {
