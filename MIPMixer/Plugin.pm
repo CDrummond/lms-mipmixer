@@ -290,7 +290,10 @@ sub _excludeAlbum {
     my $a = shift;
     my $candidate = shift;
     my @albums = @$a;
-    my $cAlbum = lc ($candidate->artistName() . " - " . $candidate->albumname());
+    my $albumArtist = $candidate->contributorsOfType('ALBUMARTIST')->single || $candidate->contributorsOfType('ARTIST')->single || $candidate->contributorsOfType('TRACKARTIST')->single;
+    my $albumArtistName = $albumArtist ? $albumArtist->name() : $candidate->artistName();
+    my $cAlbum = lc ($albumArtistName . " - " . $candidate->albumname());
+
     foreach my $album (@albums) {
         if ($album eq $cAlbum) {
             main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched album " . $album);
@@ -318,22 +321,36 @@ sub _sameArtistOrAlbum {
     my $candidate = shift;
     my $isPrevTracks = shift;
     my @tracks = @$trks;
-    my $cArtist = lc $candidate->artistName();
-    my $cAlbum = lc $candidate->albumname();
+    my $cArtistId = $candidate->artistid();
+    my $cAlbumId = lc $candidate->albumid();
+    my $cAlbumArtist = undef;
+    my $cIsVarious = 0;
     my $checked = 0;
 
     foreach my $track (@tracks) {
-        my $artist = lc $track->artistName();
-        if ($artist eq $cArtist) {
+        if ($track->artistid() == $cArtistId) {
             if ($isPrevTracks && $checked > $NUM_PREV_TRACKS_FILTER_ARTIST) {
-                my $album = lc $track->albumname();
-                if ($album eq $cAlbum) {
-                    main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album " . $artist . " - " . $album . " (" . $cat . ")");
+                if ($track->albumid() == $cAlbumId) {
+                    main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album " . $track->artistName() . " - " . $track->albumname() . " (" . $cat . ")");
                     return 1;
                 }
             } else {
-                main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched artist " . $artist . " (" . $cat . ")");
+                main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched artist " . $track->artistName() . " (" . $cat . ")");
                 return 1;
+            }
+        } elsif ($isPrevTracks) {
+            if (!$cAlbumArtist) {
+                my $aa = $candidate->contributorsOfType('ALBUMARTIST')->single || $candidate->contributorsOfType('ARTIST')->single || $candidate->contributorsOfType('TRACKARTIST')->single;
+                $cAlbumArtist = lc ($aa ? $aa->name() : $track->artistName());
+                if ($cAlbumArtist eq 'various' || $cAlbumArtist eq 'various artists') {
+                    $cIsVarious = 1;
+                }
+            }
+            if ($cIsVarious == 0) {
+                if ($track->albumid() == $cAlbumId) {
+                    main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album/artist " . $cAlbumArtist . " - " . $track->albumname() . " (" . $cat . ")");
+                    return 1;
+                }
             }
         }
 
