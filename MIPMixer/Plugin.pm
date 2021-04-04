@@ -642,7 +642,7 @@ sub _getTracksFromMix {
         $numTracks = scalar @tracks;
     }
     if ( $numTracks < $MIN_NUM_TRACKS_TO_USE && scalar @tracksFilteredBySeeds > 0) {
-        main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredByPrev " . $numTracks . "/" . scalar @tracksFilteredBySeeds);
+        main::DEBUGLOG && $log->debug("Add some tracks from tracksFilteredBySeeds " . $numTracks . "/" . scalar @tracksFilteredBySeeds);
         @tracks = ( @tracks, splice(@tracksFilteredBySeeds, 0, $MIN_NUM_TRACKS_TO_USE - $numTracks) );
         $numTracks = scalar @tracks;
     }
