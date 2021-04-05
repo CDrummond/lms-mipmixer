@@ -3,10 +3,11 @@
 1. Only convert .m4a to .m4a.mp3 and vice-versa.
 2. Use textarea for exclude artists and albums settings items.
 3. When setting exclude artists, or albums, each should be on a new line.
-4. When filtering tracks due to previous entries, use artist and album IDs.
+4. When filtering tracks due to previous entries, use album IDs.
 5. When filtering tracks due to previous entries, allow multiple tracks from
    albums where 'Album Artist' is 'Various Artists' or 'Various'
 6. When excluding albums, use 'Album Artist' not 'Artist'
+7. Check for duplicate tracks by normalizing names.
 
 0.0.3
 -----
