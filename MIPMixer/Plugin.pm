@@ -272,32 +272,27 @@ sub _excludeByGenre {
 }
 
 sub _excludeArtist {
-    my $a = shift;
+    my $artistsHashRef = shift;
     my $candidate = shift;
-    my @artists = @$a;
+    my %artistsHash = %$artistsHashRef;
     my $cArtist = lc $candidate->artistName();
-    foreach my $artist (@artists) {
-        if ($artist eq $cArtist) {
-            main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched artist " . $artist);
-            return 1;
-        }
+    if (exists($artistsHash{$cArtist})) {
+        main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched artist " . $cArtist);
+        return 1;
     }
     return 0;
 }
 
 sub _excludeAlbum {
-    my $a = shift;
+    my $albumsHashRef = shift;
     my $candidate = shift;
-    my @albums = @$a;
+    my %albumssHash = %$albumsHashRef;
     my $albumArtist = $candidate->contributorsOfType('ALBUMARTIST')->single || $candidate->contributorsOfType('ARTIST')->single || $candidate->contributorsOfType('TRACKARTIST')->single;
     my $albumArtistName = $albumArtist ? $albumArtist->name() : $candidate->artistName();
     my $cAlbum = lc ($albumArtistName . " - " . $candidate->albumname());
-
-    foreach my $album (@albums) {
-        if ($album eq $cAlbum) {
-            main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched album " . $album);
-            return 1;
-        }
+    if (exists($albumssHash{$cAlbum})) {
+        main::DEBUGLOG && $log->debug("EXCLUDE " . $candidate->url . " - matched album " . $cAlbum);
+        return 1;
     }
     return 0;
 }
@@ -605,6 +600,8 @@ sub _getTracksFromMix {
                 }
             }
         }
+        my %excludeArtistsHash = map { $_ => 1 } @$excludeArtists;
+        my %excludeAlbumsHash = map { $_ => 1 } @$excludeAlbums;
 
         foreach my $candidate (@$mix) {
             if (_idInList('seed', \%seedIdHash, $candidate)) {
@@ -626,10 +623,10 @@ sub _getTracksFromMix {
                     next;
                 }
             }
-            if (_excludeArtist(\@$excludeArtists, $candidate)) {
+            if (_excludeArtist(\%excludeArtistsHash, $candidate)) {
                 next;
             }
-            if (_excludeAlbum(\@$excludeAlbums, $candidate)) {
+            if (_excludeAlbum(\%excludeAlbumsHash, $candidate)) {
                 next;
             }
             if (_sameArtistAndTitle(\@tracks, $candidate) || ($numPrev > 0 && _sameArtistAndTitle(\@$previousTracks, $candidate))) {
