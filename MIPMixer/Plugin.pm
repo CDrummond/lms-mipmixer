@@ -72,7 +72,6 @@ sub initPlugin {
     my $class = shift;
 
     return 1 if $initialized;
-
     $prefs->init({
         mix_type        => 0,
         mix_style       => 20,
@@ -317,6 +316,9 @@ sub _idInList {
 
 sub _normalize {
     my $str = shift;
+    $str = lc $str;
+    $str =~ s/\(live\)//o;
+    $str =~ s/\[live\]//o;
     $str = lc Slim::Utils::Text::ignorePunct($str);
     $str =~ s/\sfeaturing\s/ ft /o;
     $str =~ s/\sfeat\s/ ft /o;
