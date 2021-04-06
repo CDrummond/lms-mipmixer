@@ -135,7 +135,12 @@ sub postinitPlugin {
                             my $response = shift;
                             main::DEBUGLOG && $log->debug("Recevied MIP response");
                             my $mix = _handleMipResponse($response->content);
-                            $cb->($client, _getTracksFromMix(\@$mix, \@$previousTracks, \@seedsToUse, \%seedIdHash, \@seedGenres));
+                            my @tracks = _getTracksFromMix(\@$mix, \@$previousTracks, \@seedsToUse, \%seedIdHash, \@seedGenres);
+                            if (scalar @tracks > 0) {
+                                $cb->($client, @tracks);
+                            } else {
+                                _mixFailed($client, $cb);
+                            }
                         },
                         sub {
                             my $response = shift;
@@ -147,24 +152,29 @@ sub postinitPlugin {
                                         my $response = shift;
                                         main::DEBUGLOG && $log->debug("Recevied MIP response");
                                         my $mix = _handleMipResponse($response->content);
-                                        $cb->($client, _getTracksFromMix(\@$mix, \@$previousTracks, \@seedsToUse, \%seedIdHash, \@seedGenres));
+                                        my @tracks = _getTracksFromMix(\@$mix, \@$previousTracks, \@seedsToUse, \%seedIdHash, \@seedGenres);
+                                        if (scalar @tracks > 0) {
+                                            $cb->($client, @tracks);
+                                        } else {
+                                            _mixFailed($client, $cb);
+                                        }
                                     },
                                     sub {
                                         main::DEBUGLOG && $log->debug("Failed to fetch mix");
-                                        $cb->($client, []);
+                                        _mixFailed($client, $cb);
                                     }
                                 )->get($url);
                             } else {
                                 main::DEBUGLOG && $log->debug("Failed to fetch mix");
-                                $cb->($client, []);
+                                _mixFailed($client, $cb);
                             }
                         }
                     )->get($url);
                 } else {
-                    $cb->($client, []);
+                    _mixFailed($client, $cb);
                 }
             } else {
-                $cb->($client, []);
+                _mixFailed($client, $cb);
             }
         });
     }
@@ -178,6 +188,17 @@ sub prefName {
 sub title {
     my $class = shift;
     return 'MIPMIXER';
+}
+
+sub _mixFailed {
+    my ($client, $cb) = @_;
+    if (exists $INC{'Plugins/LastMix/DontStopTheMusic.pm'}) {
+        main::DEBUGLOG && $log->debug("Call through to LastMix");
+        Plugins::LastMix::DontStopTheMusic::please($client, $cb);
+    } else {
+        main::DEBUGLOG && $log->debug("Return empty list");
+        $cb->($client, []);
+    }
 }
 
 sub _getPreviousTracks {
