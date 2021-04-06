@@ -8,6 +8,7 @@
    albums where 'Album Artist' is 'Various Artists' or 'Various'
 6. When excluding albums, use 'Album Artist' not 'Artist'
 7. Check for duplicate tracks by normalizing names.
+8. If fail to find any tracks, fall through to LastMix (if this is installed).
 
 0.0.3
 -----
