@@ -49,9 +49,10 @@ my $DESIRED_NUM_TRACKS_TO_USE = 10;
 my $MIN_NUM_TRACKS_TO_USE = 5;
 my $NUM_TRACKS_TO_SHUFFLE = 25;
 my $NUM_SEED_TRACKS = 5;
-my $NUM_PREV_TRACKS_FILTER_ARTIST = 15;
-my $NUM_PREV_TRACKS_FILTER_ALBUM = 25; # Must >= NUM_PREV_TRACKS_FILTER_ARTIST
-my $NUM_PREV_TRACKS_NO_DUPE = 100;
+my $DEF_NUM_PREV_TRACKS_FILTER_ARTIST = 15;
+my $DEF_NUM_PREV_TRACKS_FILTER_ALBUM = 25; # Must >= NUM_PREV_TRACKS_FILTER_ARTIST
+my $DEF_NUM_PREV_TRACKS_NO_DUPE = 100;
+my $MAX_NUM_PREV_TRACKS = 200;
 
 my @XMAS_GENRES = ( 'Christmas', 'XMas', 'xmas', 'Xmas' );
 
@@ -84,7 +85,10 @@ sub initPlugin {
         max_duration    => 0,
         port            => 10002,
         mip_path        => '',
-        convert_ext     => 0
+        convert_ext     => 0,
+        no_repeat_artist => $DEF_NUM_PREV_TRACKS_FILTER_ARTIST,
+        no_repeat_album  => $DEF_NUM_PREV_TRACKS_FILTER_ALBUM,
+        no_repeat_track  => $DEF_NUM_PREV_TRACKS_NO_DUPE
     });
 
     if ( main::WEBUI ) {
@@ -212,15 +216,22 @@ sub _getPreviousTracks {
     $client = $client->master;
     my ($trackId, $artist, $title, $duration, $mbid, $artist_mbid);
 
-    foreach (reverse(@{ Slim::Player::Playlist::playList($client) })) {
-        ($artist, $title, $duration, $trackId, $mbid, $artist_mbid) = Slim::Plugin::DontStopTheMusic::Plugin->getMixablePropertiesFromTrack($client, $_);
-        next unless defined $artist && defined $title && !exists($seedsHash{$trackId});
-        my ($trackObj) = Slim::Schema->find('Track', $trackId);
-        if ($trackObj) {
-            push @tracks, $trackObj;
-        }
-        if (scalar(@tracks) >= $NUM_PREV_TRACKS_NO_DUPE) {
-            last;
+    my $maxNumPrevTracks => $prefs->get('no_repeat_track');
+    if ($maxNumPrevTracks<0 || $maxNumPrevTracks>$MAX_NUM_PREV_TRACKS) {
+        $maxNumPrevTracks = $DEF_NUM_PREV_TRACKS_NO_DUPE;
+    }
+
+    if ($maxNumPrevTracks > 0 ) {
+        foreach (reverse(@{ Slim::Player::Playlist::playList($client) })) {
+            ($artist, $title, $duration, $trackId, $mbid, $artist_mbid) = Slim::Plugin::DontStopTheMusic::Plugin->getMixablePropertiesFromTrack($client, $_);
+            next unless defined $artist && defined $title && !exists($seedsHash{$trackId});
+            my ($trackObj) = Slim::Schema->find('Track', $trackId);
+            if ($trackObj) {
+                push @tracks, $trackObj;
+            }
+            if (scalar(@tracks) >= $maxNumPrevTracks) {
+                last;
+            }
         }
     }
     return \@tracks
@@ -362,6 +373,8 @@ sub _sameArtistOrAlbum {
     my $trks = shift;
     my $candidate = shift;
     my $isPrevTracks = shift;
+    my $numTracksFilterArtist = shift;
+    my $numTracksFilterAlbum = shift;
     my @tracks = @$trks;
     my $cArtist = _normalize($candidate->artistName());
     my $cAlbumId = $candidate->albumid();
@@ -369,36 +382,38 @@ sub _sameArtistOrAlbum {
     my $cIsVarious = 0;
     my $checked = 0;
 
-    foreach my $track (@tracks) {
-        if (_normalize($track->artistName()) eq $cArtist) {
-            if ($isPrevTracks && $checked > $NUM_PREV_TRACKS_FILTER_ARTIST) {
-                if ($track->albumid() == $cAlbumId) {
-                    main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album " . $track->artistName() . " - " . $track->albumname() . " (" . $cat . ")");
+    if ($numTracksFilterArtist>0 || $numTracksFilterAlbum>0) {
+        foreach my $track (@tracks) {
+            if (_normalize($track->artistName()) eq $cArtist) {
+                if ($isPrevTracks && $checked > $numTracksFilterArtist) {
+                    if ($track->albumid() == $cAlbumId) {
+                        main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album " . $track->artistName() . " - " . $track->albumname() . " (" . $cat . ")");
+                        return 1;
+                    }
+                } else {
+                    main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched artist " . $track->artistName() . " (" . $cat . ")");
                     return 1;
                 }
-            } else {
-                main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched artist " . $track->artistName() . " (" . $cat . ")");
-                return 1;
-            }
-        } elsif ($isPrevTracks) {
-            if (!$cAlbumArtist) {
-                my $aa = $candidate->contributorsOfType('ALBUMARTIST')->single || $candidate->contributorsOfType('ARTIST')->single || $candidate->contributorsOfType('TRACKARTIST')->single;
-                $cAlbumArtist = lc ($aa ? $aa->name() : $track->artistName());
-                if ($cAlbumArtist eq 'various' || $cAlbumArtist eq 'various artists') {
-                    $cIsVarious = 1;
+            } elsif ($isPrevTracks) {
+                if (!$cAlbumArtist) {
+                    my $aa = $candidate->contributorsOfType('ALBUMARTIST')->single || $candidate->contributorsOfType('ARTIST')->single || $candidate->contributorsOfType('TRACKARTIST')->single;
+                    $cAlbumArtist = lc ($aa ? $aa->name() : $track->artistName());
+                    if ($cAlbumArtist eq 'various' || $cAlbumArtist eq 'various artists') {
+                        $cIsVarious = 1;
+                    }
+                }
+                if ($cIsVarious == 0) {
+                    if ($track->albumid() == $cAlbumId) {
+                        main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album/artist " . $cAlbumArtist . " - " . $track->albumname() . " (" . $cat . ")");
+                        return 1;
+                    }
                 }
             }
-            if ($cIsVarious == 0) {
-                if ($track->albumid() == $cAlbumId) {
-                    main::DEBUGLOG && $log->debug("FILTER " . $candidate->url . " - matched album/artist " . $cAlbumArtist . " - " . $track->albumname() . " (" . $cat . ")");
-                    return 1;
-                }
-            }
-        }
 
-        $checked++;
-        if ($isPrevTracks==1 && $checked >= $NUM_PREV_TRACKS_FILTER_ALBUM) {
-            return 0;
+            $checked++;
+            if ($isPrevTracks==1 && $checked >= $numTracksFilterAlbum) {
+                return 0;
+            }
         }
     }
 
@@ -624,6 +639,15 @@ sub _getTracksFromMix {
         my %excludeArtistsHash = map { $_ => 1 } @$excludeArtists;
         my %excludeAlbumsHash = map { $_ => 1 } @$excludeAlbums;
 
+        my $numTracksFilterArtist => $prefs->get('no_repeat_artist');
+        if ($numTracksFilterArtist<0 || $numTracksFilterArtist>$MAX_NUM_PREV_TRACKS) {
+            $numTracksFilterArtist = $DEF_NUM_PREV_TRACKS_FILTER_ARTIST;
+        }
+        my $numTracksFilterAlbum => $prefs->get('no_repeat_album');
+        if ($numTracksFilterAlbum<0 || $numTracksFilterAlbum>$MAX_NUM_PREV_TRACKS) {
+            $numTracksFilterAlbum = $DEF_NUM_PREV_TRACKS_FILTER_ALBUM;
+        }
+
         foreach my $candidate (@$mix) {
             if (_idInList('seed', \%seedIdHash, $candidate)) {
                 next;
@@ -653,15 +677,15 @@ sub _getTracksFromMix {
             if (_sameArtistAndTitle(\@tracks, $candidate) || ($numPrev > 0 && _sameArtistAndTitle(\@$previousTracks, $candidate))) {
                 next;
             }
-            if (_sameArtistOrAlbum('seed', \@seedsToUse, $candidate, 0)) {
+            if (_sameArtistOrAlbum('seed', \@seedsToUse, $candidate, 0, $numTracksFilterArtist, $numTracksFilterAlbum)) {
                 push @tracksFilteredBySeeds, $candidate;
                 next;
             }
-            if (_sameArtistOrAlbum('current', \@tracks, $candidate, 0)) {
+            if (_sameArtistOrAlbum('current', \@tracks, $candidate, 0, $numTracksFilterArtist, $numTracksFilterAlbum)) {
                 push @tracksFilteredByCurrent, $candidate;
                 next;
             }
-            if ($numPrev > 0 && _sameArtistOrAlbum('prev', \@$previousTracks, $candidate, 1)) {
+            if ($numPrev > 0 && _sameArtistOrAlbum('prev', \@$previousTracks, $candidate, 1, $numTracksFilterArtist, $numTracksFilterAlbum)) {
                 push @tracksFilteredByPrev, $candidate;
                 next;
             }

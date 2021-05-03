@@ -9,6 +9,7 @@
 6. When excluding albums, use 'Album Artist' not 'Artist'
 7. Check for duplicate tracks by normalizing names.
 8. If fail to find any tracks, fall through to LastMix (if this is installed).
+9. Make no repeat artist/album/track settings configurable.
 
 0.0.3
 -----

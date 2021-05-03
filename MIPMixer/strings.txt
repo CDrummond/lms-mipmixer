@@ -195,3 +195,22 @@ MIPMIXER_MIX
 
 DEBUG_PLUGIN_MIPMIXER
 	EN	MusicIP Mixer
+
+MIPMIXER_NO_REPEAT_ARTIST
+	EN	Don't repeat artist for x tracks
+
+MIPMIXER_NO_REPEAT_ARTIST_DESC
+	EN	Attempt to not use the same artist for the specified number of tracks. Artist may still repeat if there are too few candidate tracks.
+
+MIPMIXER_NO_REPEAT_ALBUM
+	EN	Don't repeat album for x tracks
+
+MIPMIXER_NO_REPEAT_ALBUM_DESC
+	EN	Attempt to not use the tracks from an album for the specified number of tracks. Tracks from same album may still repeat if there are too few candidate tracks, or the album is a 'Various Artists' album.
+
+MIPMIXER_NO_REPEAT_TRACK
+	EN	Don't repeat track for x tracks
+
+MIPMIXER_NO_REPEAT_TRACK_DESC
+	EN	Prevent a track from being repeated within the specified limit.
+

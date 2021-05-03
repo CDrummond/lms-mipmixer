@@ -32,16 +32,24 @@
             <textarea class="stdedit" name="pref_exclude_albums" id="exclude_albums" cols="45" rows="5">[% prefs.pref_exclude_albums %]</textarea>
         [% END %]
 
-        [% IF prefs.exists('pref_min_duration') %]
-            [% WRAPPER settingGroup title="MIPMIXER_MIN_DURATION" desc="MIPMIXER_MIN_DURATION_DESC" %]
-                <input type="text" class="stdedit" name="pref_min_duration" id="min_duration" value="[% prefs.pref_min_duration %]" size="5">
-            [% END %]
+        [% WRAPPER settingGroup title="MIPMIXER_NO_REPEAT_ARTIST" desc="MIPMIXER_NO_REPEAT_ARTIST_DESC" %]
+            <input type="text" class="stdedit sliderInput_0_200_1" name="pref_no_repeat_artist" id="no_repeat_artist" value="[% prefs.pref_no_repeat_artist %]" size="5">
         [% END %]
 
-        [% IF prefs.exists('pref_max_duration') %]
-            [% WRAPPER settingGroup title="MIPMIXER_MAX_DURATION" desc="MIPMIXER_MAX_DURATION_DESC" %]
-                <input type="text" class="stdedit" name="pref_max_duration" id="max_duration" value="[% prefs.pref_max_duration %]" size="5">
-            [% END %]
+        [% WRAPPER settingGroup title="MIPMIXER_NO_REPEAT_ALBUM" desc="MIPMIXER_NO_REPEAT_ALBUM_DESC" %]
+            <input type="text" class="stdedit sliderInput_0_200_1" name="pref_no_repeat_album" id="no_repeat_album" value="[% prefs.pref_no_repeat_album %]" size="5">
+        [% END %]
+
+        [% WRAPPER settingGroup title="MIPMIXER_NO_REPEAT_TRACK" desc="MIPMIXER_NO_REPEAT_TRACK_DESC" %]
+            <input type="text" class="stdedit sliderInput_0_200_1" name="pref_no_repeat_track" id="no_repeat_track" value="[% prefs.pref_no_repeat_track %]" size="5">
+        [% END %]
+
+        [% WRAPPER settingGroup title="MIPMIXER_MIN_DURATION" desc="MIPMIXER_MIN_DURATION_DESC" %]
+            <input type="text" class="stdedit" name="pref_min_duration" id="min_duration" value="[% prefs.pref_min_duration %]" size="5">
+        [% END %]
+
+        [% WRAPPER settingGroup title="MIPMIXER_MAX_DURATION" desc="MIPMIXER_MAX_DURATION_DESC" %]
+            <input type="text" class="stdedit" name="pref_max_duration" id="max_duration" value="[% prefs.pref_max_duration %]" size="5">
         [% END %]
 
         [% WRAPPER settingGroup title="MIPMIXER_MIX_FILTER" desc="MIPMIXER_MIX_FILTER_DESC" %]
@@ -63,10 +71,8 @@
             </select>
         [% END %]
 
-        [% IF prefs.exists('pref_port') %]
-            [% WRAPPER settingGroup title="MIPMIXER_MMSPORT" desc="MIPMIXER_MMSPORT_DESC" %]
-                <input type="text" class="stdedit" name="pref_port" id="port" value="[% prefs.pref_port %]" size="5">
-            [% END %]
+        [% WRAPPER settingGroup title="MIPMIXER_MMSPORT" desc="MIPMIXER_MMSPORT_DESC" %]
+            <input type="text" class="stdedit" name="pref_port" id="port" value="[% prefs.pref_port %]" size="5">
         [% END %]
 
     [% END %]
