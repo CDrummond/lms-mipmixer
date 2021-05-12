@@ -216,7 +216,7 @@ sub _getPreviousTracks {
     $client = $client->master;
     my ($trackId, $artist, $title, $duration, $mbid, $artist_mbid);
 
-    my $maxNumPrevTracks => $prefs->get('no_repeat_track');
+    my $maxNumPrevTracks = $prefs->get('no_repeat_track');
     if ($maxNumPrevTracks<0 || $maxNumPrevTracks>$MAX_NUM_PREV_TRACKS) {
         $maxNumPrevTracks = $DEF_NUM_PREV_TRACKS_NO_DUPE;
     }
@@ -639,11 +639,11 @@ sub _getTracksFromMix {
         my %excludeArtistsHash = map { $_ => 1 } @$excludeArtists;
         my %excludeAlbumsHash = map { $_ => 1 } @$excludeAlbums;
 
-        my $numTracksFilterArtist => $prefs->get('no_repeat_artist');
+        my $numTracksFilterArtist = $prefs->get('no_repeat_artist');
         if ($numTracksFilterArtist<0 || $numTracksFilterArtist>$MAX_NUM_PREV_TRACKS) {
             $numTracksFilterArtist = $DEF_NUM_PREV_TRACKS_FILTER_ARTIST;
         }
-        my $numTracksFilterAlbum => $prefs->get('no_repeat_album');
+        my $numTracksFilterAlbum = $prefs->get('no_repeat_album');
         if ($numTracksFilterAlbum<0 || $numTracksFilterAlbum>$MAX_NUM_PREV_TRACKS) {
             $numTracksFilterAlbum = $DEF_NUM_PREV_TRACKS_FILTER_ALBUM;
         }
@@ -799,7 +799,7 @@ sub _initGenres {
 sub _getSeedGenres {
     my $track = shift;
     my @genres = ();
-    if ($prefs->get('filter_genres')) {
+    if ($prefs->get('filter_genres')>0) {
         my @lmsgenres = ();
         # Get genres stored in LMS for this track
         my $dbh = Slim::Schema->dbh;
