@@ -188,7 +188,7 @@ MIPMIXER_CONVERT_EXT
 	EN	Convert file-type extensions
 
 MIPMIXER_CONVERT_EXT_DESC
-	EN	Convert to, and from, file extensions for MusicIP.
+	EN	Convert to, and from, file extensions for MusicIP. This is only required if MusicIP anlysed converted versions of LMS's files. e.g. MusicIP under Linux cannot handle m4a files, to work-around this you can transcode these to mp3 to allow MusicIP to analyse them - LMS would play the m4a version, but MusicIP would only know about the mp3 version, so file extentions need to be converted.
 
 MIPMIXER_MIX
 	EN	MusicIP Mixer
