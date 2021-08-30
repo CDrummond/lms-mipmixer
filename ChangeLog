@@ -1,15 +1,17 @@
 0.0.4
 -----
-1. Only convert .m4a to .m4a.mp3 and vice-versa.
-2. Use textarea for exclude artists and albums settings items.
-3. When setting exclude artists, or albums, each should be on a new line.
-4. When filtering tracks due to previous entries, use album IDs.
-5. When filtering tracks due to previous entries, allow multiple tracks from
-   albums where 'Album Artist' is 'Various Artists' or 'Various'
-6. When excluding albums, use 'Album Artist' not 'Artist'
-7. Check for duplicate tracks by normalizing names.
-8. If fail to find any tracks, fall through to LastMix (if this is installed).
-9. Make no repeat artist/album/track settings configurable.
+ 1. Only convert .m4a to .m4a.mp3 and vice-versa.
+ 2. Use textarea for exclude artists and albums settings items.
+ 3. When setting exclude artists, or albums, each should be on a new line.
+ 4. When filtering tracks due to previous entries, use album IDs.
+ 5. When filtering tracks due to previous entries, allow multiple tracks from
+    albums where 'Album Artist' is 'Various Artists' or 'Various'
+ 6. When excluding albums, use 'Album Artist' not 'Artist'
+ 7. Check for duplicate tracks by normalizing names.
+ 8. If fail to find any tracks, fall through to LastMix (if this is installed).
+ 9. Make no repeat artist/album/track settings configurable.
+10. Don't remove seeds from previous tracks, and only filter on previous not
+    seeds.
 
 0.0.3
 -----

@@ -131,7 +131,7 @@ sub postinitPlugin {
 
                 if (scalar @seedsToUse > 0) {
                     my %seedIdHash = map { $_ => 1 } @seedIds;
-                    my $previousTracks = _getPreviousTracks($client, \%seedIdHash);
+                    my $previousTracks = _getPreviousTracks($client);
                     my $url = _getMixUrl(\@seedsToUse);
 
                     Slim::Networking::SimpleAsyncHTTP->new(
@@ -207,8 +207,6 @@ sub _mixFailed {
 
 sub _getPreviousTracks {
     my $client = shift;
-    my $seedsHashRef = shift;
-    my %seedsHash = %$seedsHashRef;
     my @tracks = ();
 
     return \@tracks unless $client;
@@ -216,15 +214,33 @@ sub _getPreviousTracks {
     $client = $client->master;
     my ($trackId, $artist, $title, $duration, $mbid, $artist_mbid);
 
-    my $maxNumPrevTracks = $prefs->get('no_repeat_track');
-    if ($maxNumPrevTracks<0 || $maxNumPrevTracks>$MAX_NUM_PREV_TRACKS) {
-        $maxNumPrevTracks = $DEF_NUM_PREV_TRACKS_NO_DUPE;
+    my $noRepTrack = $prefs->get('no_repeat_track');
+    if ($noRepTrack<0 || $noRepTrack>$MAX_NUM_PREV_TRACKS) {
+        $noRepTrack = $DEF_NUM_PREV_TRACKS_NO_DUPE;
+    }
+
+    my $noRepArtist = $prefs->get('no_repeat_artist');
+    if ($noRepArtist<0 || $noRepArtist>$MAX_NUM_PREV_TRACKS) {
+        $noRepArtist = $DEF_NUM_PREV_TRACKS_NO_DUPE;
+    }
+
+    my $noRepAlbum = $prefs->get('no_repeat_album');
+    if ($noRepAlbum<0 || $noRepAlbum>$MAX_NUM_PREV_TRACKS) {
+        $noRepAlbum = $DEF_NUM_PREV_TRACKS_NO_DUPE;
+    }
+
+    my $maxNumPrevTracks = $noRepTrack;
+    if ($noRepArtist>$maxNumPrevTracks) {
+        $maxNumPrevTracks=$noRepArtist;
+    }
+    if ($noRepAlbum>$maxNumPrevTracks) {
+        $maxNumPrevTracks=$noRepAlbum;
     }
 
     if ($maxNumPrevTracks > 0 ) {
         foreach (reverse(@{ Slim::Player::Playlist::playList($client) })) {
             ($artist, $title, $duration, $trackId, $mbid, $artist_mbid) = Slim::Plugin::DontStopTheMusic::Plugin->getMixablePropertiesFromTrack($client, $_);
-            next unless defined $artist && defined $title && !exists($seedsHash{$trackId});
+            next unless defined $artist && defined $title;
             my ($trackObj) = Slim::Schema->find('Track', $trackId);
             if ($trackObj) {
                 push @tracks, $trackObj;
@@ -585,16 +601,29 @@ sub _getTracksFromMix {
     my @tracksFilteredByPrev = ();                # MIP tracks that matched artists/albums already in queue
     my @tracksFilteredBySeedNotInGenreGroup = (); # MIP tracks that were in a genre group, but seed tracks were not
     if ($mix && scalar @$mix) {
+        my $noRepTrack = $prefs->get('no_repeat_track');
+        if ($noRepTrack<0 || $noRepTrack>$MAX_NUM_PREV_TRACKS) {
+            $noRepTrack = $DEF_NUM_PREV_TRACKS_NO_DUPE;
+        }
         my %prevTrackIdHash = undef;
         my $numPrev = $previousTracks ? scalar(@$previousTracks) : 0;
         if ($numPrev > 0) {
             my $idList = [];
-            foreach my $track (@$previousTracks) {
-                push @$idList, $track->id;
+            if ($noRepTrack>0) {
+                foreach my $track (@$previousTracks) {
+                    push @$idList, $track->id;
+                    if (scalar(@$idList)>=$noRepTrack) {
+                        last;
+                    }
+                }
             }
             %prevTrackIdHash = map { $_ => 1 } @$idList;
+            main::DEBUGLOG && $log->debug("Num tracks:" . scalar(@$mix) . ", prev:" . $numPrev);
+        } else {
+            $previousTracks = $seedsToUseRef;
+            $numPrev = $previousTracks ? scalar(@$previousTracks) : 0;
+            main::DEBUGLOG && $log->debug("Num tracks:" . scalar(@$mix) . ", prev(seeds):" . $numPrev);
         }
-        main::DEBUGLOG && $log->debug("Num tracks:" . scalar(@$mix) . ", seeds:" . scalar(@seedsToUse) . ", prev:" . $numPrev);
 
         my %genrehash = undef;
         my %xmashash = undef;
@@ -652,7 +681,7 @@ sub _getTracksFromMix {
             if (_idInList('seed', \%seedIdHash, $candidate)) {
                 next;
             }
-            if ($numPrev > 0 && _idInList('prev', \%prevTrackIdHash, $candidate)) {
+            if ($numPrev > 0 && $noRepTrack>0 && _idInList('prev', \%prevTrackIdHash, $candidate)) {
                 next;
             }
             if (!_durationInRange($minDuration, $maxDuration, $candidate)) {
@@ -675,10 +704,6 @@ sub _getTracksFromMix {
                 next;
             }
             if (_sameArtistAndTitle(\@tracks, $candidate) || ($numPrev > 0 && _sameArtistAndTitle(\@$previousTracks, $candidate))) {
-                next;
-            }
-            if (_sameArtistOrAlbum('seed', \@seedsToUse, $candidate, 0, $numTracksFilterArtist, $numTracksFilterAlbum)) {
-                push @tracksFilteredBySeeds, $candidate;
                 next;
             }
             if (_sameArtistOrAlbum('current', \@tracks, $candidate, 0, $numTracksFilterArtist, $numTracksFilterAlbum)) {
