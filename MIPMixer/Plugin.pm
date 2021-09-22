@@ -823,7 +823,6 @@ sub _initXmasGenres {
     my $dbh = Slim::Schema->dbh;
     my $sql = $dbh->prepare_cached( qq{SELECT genres.id FROM genres WHERE name = ? LIMIT 1} );
 
-
     # Chistmas...
     foreach my $genre (@XMAS_GENRES) {
         $sql->execute($genre);

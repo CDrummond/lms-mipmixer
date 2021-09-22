@@ -17,22 +17,17 @@ following modifications:
 file support. To allow MusicIP to use CUE files, see the `analyser` and `proxy`
 scripts located at [https://github.com/CDrummond/musicip](https://github.com/CDrummond/musicip)
 
-Genres are configured via editing `genres.json` using the following syntax:
+## Genre groups
 
-```
-[
- [ "Rock", "Hard Rock", "Metal" ],
- [ "Pop", "Dance", "R&B"]
-]
-```
+Genres are configured in the plugin's LMS settings page. Each line in this
+settings section is a genre group - and is a list of comma separated genres.
 
 If a seed track has `Hard Rock` as its genre, then only tracks with `Rock`, 
 `Hard Rock`, or `Metal` will be allowed. If a seed track has a genre that is not
 listed here then any track returned by MusicIP, whose genre is not in one of
 these groups, will be considered acceptable.
 
-`genres.json` should be placed within you LMS's `prefs` folder. If this is not
-found there, then the plugin will use its own version.
+## Filtering
 
 If too many tracks are filtered out due to matching previous, current, or seed
 tracks, or not having genre in a group, then some of these filtered tracks will
