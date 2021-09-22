@@ -52,6 +52,10 @@
             <input type="text" class="stdedit" name="pref_max_duration" id="max_duration" value="[% prefs.pref_max_duration %]" size="5">
         [% END %]
 
+        [% WRAPPER settingGroup title="MIPMIXER_GENRE_GROUPS" desc="MIPMIXER_GENRE_GROUPS_DESC" %]
+            <textarea class="stdedit" name="pref_genre_groups" id="genre_groups" cols="80" rows="5">[% prefs.pref_genre_groups %]</textarea>
+        [% END %]
+
         [% WRAPPER settingGroup title="MIPMIXER_MIX_FILTER" desc="MIPMIXER_MIX_FILTER_DESC" %]
             <select class="stdedit" name="pref_mix_filter" id="mix_filter">
             [% FOREACH option = filters.keys %]

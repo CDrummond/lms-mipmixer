@@ -43,6 +43,7 @@ my $initialized = 0;
 my @genreSets = ();
 my $xmasGenres = {};
 my $allConfiguredGenres = {};
+my $lastGenreGroupsTs = 0;
 my $NUM_TRACKS = 50; # Request a *LOT* of tracks so that we can filter on genre, artist, and album
 my $NUM_TRACKS_REPEAT_ARTIST = 25;
 my $DESIRED_NUM_TRACKS_TO_USE = 10;
@@ -95,7 +96,7 @@ sub initPlugin {
         Plugins::MIPMixer::Settings->new;
     }
 
-    _initGenres();
+    _initXmasGenres();
     $initialized = 1;
     return $initialized;
 }
@@ -110,6 +111,10 @@ sub postinitPlugin {
             my ($client, $cb) = @_;
 
             my $seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, $NUM_SEED_TRACKS);
+
+            if ($prefs->get('filter_genres')>0) {
+                _initGenreGroups();
+            }
 
             # Get list of valid seeds...
             if ($seedTracks && ref $seedTracks && scalar @$seedTracks) {
@@ -772,40 +777,52 @@ sub _getTracksFromMix {
     return \@tracks;
 }
 
-sub _initGenres {
-    my $filePath = Slim::Utils::Prefs::dir() . "/genres.json";
-    if (! -e $filePath) {
-        $filePath = dirname(__FILE__) . "/genres.json";
+sub _initGenreGroups {
+    my $ts = $prefs->get('_ts_genre_groups');
+    if ($ts==$lastGenreGroupsTs) {
+        return;
     }
-
-    my $json = read_file($filePath);
-    my $data = decode_json($json);
-    my $dbh = Slim::Schema->dbh;
-    my $sql = $dbh->prepare_cached( qq{SELECT genres.id FROM genres WHERE name = ? LIMIT 1} );
-    my $count = 0;
-
+    $lastGenreGroupsTs = $ts;
     @genreSets = ();
-    if ($data) {
-        foreach my $s (@$data) {
+    $allConfiguredGenres = {};
+    my $ggpref = $prefs->get('genre_groups');
+    if ($ggpref) {
+        my $dbh = Slim::Schema->dbh;
+        my $sql = $dbh->prepare_cached( qq{SELECT genres.id FROM genres WHERE name = ? LIMIT 1} );
+        my @lines = split(/\n/, $ggpref);
+        foreach my $line (@lines) {
+            my @genreGroup = split(/\,/, $line);
             my $set = {};
-            foreach my $genre (@$s) {
-                $sql->execute($genre);
-                if ( my $result = $sql->fetchall_arrayref({}) ) {
-                    my $val = $result->[0]->{'id'} if ref $result && scalar @$result;
-                    if ($val) {
-                        $set->{$val}=1;
-                        $count++;
-                        $allConfiguredGenres->{$val}=1;
+            my $count = 0;
+            foreach my $genre (@genreGroup) {
+                # left trim
+                $genre=~ s/^\s+//;
+                # right trim
+                $genre=~ s/\s+$//;
+                if (length $genre > 0){
+                    $sql->execute($genre);
+                    if ( my $result = $sql->fetchall_arrayref({}) ) {
+                        my $val = $result->[0]->{'id'} if ref $result && scalar @$result;
+                        if ($val) {
+                            $set->{$val}=1;
+                            $count++;
+                            $allConfiguredGenres->{$val}=1;
+                        }
                     }
                 }
             }
-
             if ($count>1) {
                 push(@genreSets, $set);
             }
         }
-        main::DEBUGLOG && $log->debug("Confgured genres: " . Data::Dump::dump(@genreSets));
     }
+    main::DEBUGLOG && $log->debug("Confgured genres: " . Data::Dump::dump(@genreSets));
+}
+
+sub _initXmasGenres {
+    my $dbh = Slim::Schema->dbh;
+    my $sql = $dbh->prepare_cached( qq{SELECT genres.id FROM genres WHERE name = ? LIMIT 1} );
+
 
     # Chistmas...
     foreach my $genre (@XMAS_GENRES) {
@@ -814,7 +831,6 @@ sub _initGenres {
             my $val = $result->[0]->{'id'} if ref $result && scalar @$result;
             if ($val) {
                 $xmasGenres->{$val}=1;
-                $count++;
             }
         }
     }
