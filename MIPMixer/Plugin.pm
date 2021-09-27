@@ -791,7 +791,7 @@ sub _initGenreGroups {
         my $sql = $dbh->prepare_cached( qq{SELECT genres.id FROM genres WHERE name = ? LIMIT 1} );
         my @lines = split(/\n/, $ggpref);
         foreach my $line (@lines) {
-            my @genreGroup = split(/\,/, $line);
+            my @genreGroup = split(/\;/, $line);
             my $set = {};
             my $count = 0;
             foreach my $genre (@genreGroup) {
