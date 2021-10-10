@@ -40,7 +40,7 @@ sub page {
 }
 
 sub prefs {
-	return ($prefs, qw(port filter_genres filter_xmas exclude_artists exclude_albums min_duration max_duration mix_filter mix_variety mix_style mix_type mip_path convert_ext no_repeat_artist no_repeat_album no_repeat_track genre_groups));
+	return ($prefs, qw(host port filter_genres filter_xmas exclude_artists exclude_albums min_duration max_duration mix_filter mix_variety mix_style mix_type mip_path convert_ext no_repeat_artist no_repeat_album no_repeat_track genre_groups));
 }
 
 sub handler {

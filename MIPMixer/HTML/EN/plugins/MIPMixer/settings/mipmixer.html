@@ -75,6 +75,10 @@
             </select>
         [% END %]
 
+        [% WRAPPER settingGroup title="MIPMIXER_HOST" desc="MIPMIXER_HOST_DESC" %]
+            <input type="text" class="stdedit" name="pref_host" id="host" value="[% prefs.pref_host %]" size="15">
+        [% END %]
+
         [% WRAPPER settingGroup title="MIPMIXER_MMSPORT" desc="MIPMIXER_MMSPORT_DESC" %]
             <input type="text" class="stdedit" name="pref_port" id="port" value="[% prefs.pref_port %]" size="5">
         [% END %]

@@ -84,6 +84,7 @@ sub initPlugin {
         exclude_albums  => '',
         min_duration    => 0,
         max_duration    => 0,
+        host            => 'localhost',
         port            => 10002,
         mip_path        => '',
         convert_ext     => 0,
@@ -550,7 +551,9 @@ sub _getMixUrl {
         'song=' . Plugins::MIPMixer::Common::escape(_convertToMip($id, $mipPath, $lmsPath, $convertExt));
     } @tracks);
 
-    my $url = "http://localhost:" . $prefs->get('port') . "/api/mix?$mixArgs\&$argString";
+    my $host = $prefs->get('host') || 'localhost';
+    my $port = $prefs->get('port') || 10002,;
+    my $url = "http://$host:$port/api/mix?$mixArgs\&$argString";
     main::DEBUGLOG && $log->debug("Request $url");
     return $url;
 }
