@@ -2,6 +2,7 @@
 -----
 1. Allow configuring genre groups in LMS's settings pages.
 2. Allow configuring host of MusicIP server.
+3. Fetch filters.
 
 0.0.4
 -----

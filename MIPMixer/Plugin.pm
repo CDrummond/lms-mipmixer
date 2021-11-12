@@ -97,6 +97,7 @@ sub initPlugin {
         Plugins::MIPMixer::Settings->new;
     }
 
+    Slim::Plugin::MIPMixer::Common->grabFilters();
     _initXmasGenres();
     $initialized = 1;
     return $initialized;
@@ -174,6 +175,7 @@ sub postinitPlugin {
                                         _mixFailed($client, $cb);
                                     }
                                 )->get($url);
+                                Slim::Plugin::MIPMixer::Common->grabFilters();
                             } else {
                                 main::DEBUGLOG && $log->debug("Failed to fetch mix");
                                 _mixFailed($client, $cb);

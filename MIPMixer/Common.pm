@@ -27,11 +27,11 @@ use Slim::Utils::Unicode;
 
 *escape = main::ISWINDOWS ? \&URI::Escape::uri_escape : \&URI::Escape::uri_escape_utf8;
 
-my $log = logger('plugin.musicip');
+my $log = logger('plugin.mipmixer');
 
 my %filterHash = ();
 
-my $prefs = preferences('plugin.musicip');
+my $prefs = preferences('plugin.mipmixer');
 
 $prefs->setValidate('num', qw(scan_interval port mix_variety mix_style reject_size));
 
