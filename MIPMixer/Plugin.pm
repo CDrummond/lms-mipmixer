@@ -123,6 +123,7 @@ sub postinitPlugin {
                 my @seedGenres = ();
                 my @seedIds = ();
                 my @seedsToUse = ();
+                my $numSpot = 0;
                 foreach my $seedTrack (@$seedTracks) {
                     my ($trackObj) = Slim::Schema->find('Track', $seedTrack->{id});
                     if ($trackObj) {
@@ -133,6 +134,9 @@ sub postinitPlugin {
                         }
                         push @seedsToUse, $trackObj;
                         push @seedIds, $seedTrack->{id};
+                        if ( $trackObj->path =~ m/^spotify:/ ) {
+                            $numSpot++;
+                        }
                     }
                 }
 
@@ -150,7 +154,7 @@ sub postinitPlugin {
                             if (scalar @tracks > 0) {
                                 $cb->($client, @tracks);
                             } else {
-                                _mixFailed($client, $cb);
+                                _mixFailed($client, $cb, $numSpot);
                             }
                         },
                         sub {
@@ -167,26 +171,26 @@ sub postinitPlugin {
                                         if (scalar @tracks > 0) {
                                             $cb->($client, @tracks);
                                         } else {
-                                            _mixFailed($client, $cb);
+                                            _mixFailed($client, $cb, $numSpot);
                                         }
                                     },
                                     sub {
                                         main::DEBUGLOG && $log->debug("Failed to fetch mix");
-                                        _mixFailed($client, $cb);
+                                        _mixFailed($client, $cb, $numSpot);
                                     }
                                 )->get($url);
                                 Slim::Plugin::MIPMixer::Common->grabFilters();
                             } else {
                                 main::DEBUGLOG && $log->debug("Failed to fetch mix");
-                                _mixFailed($client, $cb);
+                                _mixFailed($client, $cb, $numSpot);
                             }
                         }
                     )->get($url);
                 } else {
-                    _mixFailed($client, $cb);
+                    _mixFailed($client, $cb, $numSpot);
                 }
             } else {
-                _mixFailed($client, $cb);
+                _mixFailed($client, $cb, 0);
             }
         });
     }
@@ -203,8 +207,12 @@ sub title {
 }
 
 sub _mixFailed {
-    my ($client, $cb) = @_;
-    if (exists $INC{'Plugins/LastMix/DontStopTheMusic.pm'}) {
+    my ($client, $cb, $numSpot) = @_;
+
+    if ($numSpot > 0 && exists $INC{'Plugins/Spotty/DontStopTheMusic.pm'}) {
+        main::DEBUGLOG && $log->debug("Call through to Spotty");
+        Plugins::Spotty::DontStopTheMusic::dontStopTheMusic($client, $cb);
+    } elsif (exists $INC{'Plugins/LastMix/DontStopTheMusic.pm'}) {
         main::DEBUGLOG && $log->debug("Call through to LastMix");
         Plugins::LastMix::DontStopTheMusic::please($client, $cb);
     } else {
