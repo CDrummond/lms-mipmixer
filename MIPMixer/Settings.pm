@@ -3,7 +3,7 @@ package Plugins::MIPMixer::Settings;
 #
 # LMS-MIPMixer
 #
-# Copyright (c) 2020-2021 Craig Drummond <craig.p.drummond@gmail.com>
+# Copyright (c) 2020-2022 Craig Drummond <craig.p.drummond@gmail.com>
 #
 # GPLv2 license.
 #
