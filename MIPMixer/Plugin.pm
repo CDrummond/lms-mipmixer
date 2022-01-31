@@ -631,7 +631,8 @@ sub _handleMipResponse {
 
         my $isFileUrl = index($id, 'file:///')==0;
         if ($isFileUrl || -e $id || -e Slim::Utils::Unicode::utf8encode_locale($id)) {
-            my $track = Slim::Schema->objectForUrl($isFileUrl ? $id : Slim::Utils::Misc::fileURLFromPath($id));
+            # Decode file:// URL and re-encode so that match LMS's encoding
+            my $track = Slim::Schema->objectForUrl(Slim::Utils::Misc::fileURLFromPath($isFileUrl ? Slim::Utils::Misc::pathFromFileURL($id) : $id));
 
             if (blessed $track) {
                 push @mix, $track;
