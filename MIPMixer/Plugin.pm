@@ -629,8 +629,9 @@ sub _handleMipResponse {
             $id = Win32::GetANSIPathName($id);
         }
 
-        if ( -e $id || -e Slim::Utils::Unicode::utf8encode_locale($id) || index($id, 'file:///')==0) {
-            my $track = Slim::Schema->objectForUrl(Slim::Utils::Misc::fileURLFromPath($id));
+        my $isFileUrl = index($id, 'file:///')==0;
+        if ($isFileUrl || -e $id || -e Slim::Utils::Unicode::utf8encode_locale($id)) {
+            my $track = Slim::Schema->objectForUrl($isFileUrl ? $id : Slim::Utils::Misc::fileURLFromPath($id));
 
             if (blessed $track) {
                 push @mix, $track;

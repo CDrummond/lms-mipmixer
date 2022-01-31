@@ -6,6 +6,7 @@
 4. If fail to find any tracks, fall through to Spotty (if have Spotify tracks
    and Spotty is installed).
 5. When getting 5 seed tracks select 5 random tracks from last 10 of queue.
+6. No need to call fileURLFromPath on file:// URLs.
 
 0.0.4
 -----
